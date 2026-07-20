@@ -131,65 +131,74 @@ export function CreateExpenseForm({
           placeholder="เช่น รายละเอียดงาน ใบเสนอราคา ผู้รับเหมา หรือเงื่อนไขการชำระ"
         />
       </div>
-      <div className="grid gap-3 rounded-md border bg-secondary/20 p-3">
-        <label htmlFor="create-appliance" className="flex items-start gap-3">
-          <input
-            id="create-appliance"
-            name="create_appliance"
-            type="checkbox"
-            value="1"
-            className="mt-1 size-4 accent-primary"
-          />
-          <span>
-            <span className="block text-sm font-semibold">
-              บันทึกเป็นเครื่องใช้ไฟฟ้าและประกันด้วย
+      <details className="rounded-md border bg-secondary/20 p-3">
+        <summary className="cursor-pointer text-sm font-semibold">
+          เครื่องใช้ไฟฟ้าและประกัน
+        </summary>
+        <div className="mt-3 grid gap-3">
+          <label htmlFor="create-appliance" className="flex items-start gap-3">
+            <input
+              id="create-appliance"
+              name="create_appliance"
+              type="checkbox"
+              value="1"
+              className="mt-1 size-4 accent-primary"
+            />
+            <span>
+              <span className="block text-sm font-semibold">
+                บันทึกเป็นเครื่องใช้ไฟฟ้าด้วย
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                ใช้กับรายการซื้อเครื่องใช้ไฟฟ้า เช่น แอร์ ตู้เย็น เครื่องซักผ้า
+              </span>
             </span>
-            <span className="block text-xs text-muted-foreground">
-              ใช้กับรายการซื้อเครื่องใช้ไฟฟ้า เช่น แอร์ ตู้เย็น เครื่องซักผ้า
-            </span>
-          </span>
-        </label>
-        <div className="space-y-2">
-          <Label htmlFor="appliance-name">ชื่อเครื่องใช้ไฟฟ้า</Label>
-          <Input
-            id="appliance-name"
-            name="appliance_name"
-            placeholder="ถ้าไม่ใส่ จะใช้ชื่อรายการด้านบน"
-          />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+          </label>
           <div className="space-y-2">
-            <Label htmlFor="appliance-brand">ยี่ห้อ</Label>
+            <Label htmlFor="appliance-name">ชื่อเครื่องใช้ไฟฟ้า</Label>
             <Input
-              id="appliance-brand"
-              name="brand"
-              placeholder="เช่น Daikin"
+              id="appliance-name"
+              name="appliance_name"
+              placeholder="ถ้าไม่ใส่ จะใช้ชื่อรายการด้านบน"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="appliance-model">รุ่น</Label>
-            <Input id="appliance-model" name="model" placeholder="รุ่นสินค้า" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="appliance-brand">ยี่ห้อ</Label>
+              <Input
+                id="appliance-brand"
+                name="brand"
+                placeholder="เช่น Daikin"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="appliance-model">รุ่น</Label>
+              <Input
+                id="appliance-model"
+                name="model"
+                placeholder="รุ่นสินค้า"
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="appliance-purchase-date">วันที่ซื้อ</Label>
+              <Input
+                id="appliance-purchase-date"
+                name="purchase_date"
+                type="date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="appliance-warranty-end-date">วันหมดประกัน</Label>
+              <Input
+                id="appliance-warranty-end-date"
+                name="warranty_end_date"
+                type="date"
+              />
+            </div>
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="appliance-purchase-date">วันที่ซื้อ</Label>
-            <Input
-              id="appliance-purchase-date"
-              name="purchase_date"
-              type="date"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="appliance-warranty-end-date">วันหมดประกัน</Label>
-            <Input
-              id="appliance-warranty-end-date"
-              name="warranty_end_date"
-              type="date"
-            />
-          </div>
-        </div>
-      </div>
+      </details>
       <Button type="submit">เพิ่มรายการ</Button>
     </form>
   );

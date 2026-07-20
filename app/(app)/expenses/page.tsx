@@ -89,49 +89,62 @@ export default async function ExpensesPage({
   ];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
-      <section className="space-y-4">
-        <div className="rounded-lg bg-[#00bfa5] p-5 text-white shadow-sm">
-          <h1 className="text-2xl font-semibold">ค่าใช้จ่าย</h1>
-          <p className="mt-1 text-sm text-white/80">
-            รวมค่าใช้จ่าย {formatMoney(total, home?.default_currency)} ·
-            เครื่องใช้ไฟฟ้า {appliances.length} รายการ · ประกัน{" "}
-            {activeWarranties} รายการ
-          </p>
-        </div>
-        <form
-          action="/expenses"
-          className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between"
-        >
-          <div className="space-y-2">
-            <label htmlFor="expenses-home" className="text-sm font-medium">
-              บ้านของค่าใช้จ่าย
-            </label>
-            <select
-              id="expenses-home"
-              name="homeId"
-              defaultValue={home?.id}
-              className="flex h-10 w-full min-w-64 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {homes.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section className="grid min-w-0 gap-4">
+        <div className="grid gap-3 rounded-lg bg-white p-4 shadow-sm lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
+          <div className="rounded-lg bg-[#00bfa5] p-5 text-white">
+            <h1 className="text-2xl font-semibold">ค่าใช้จ่าย</h1>
+            <p className="mt-1 text-sm text-white/80">
+              รวมค่าใช้จ่าย {formatMoney(total, home?.default_currency)}
+            </p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+              <div className="rounded-md bg-white/15 p-3">
+                <p className="text-white/70">ทั่วไป</p>
+                <p className="text-lg font-semibold">{normalExpenses.length}</p>
+              </div>
+              <div className="rounded-md bg-white/15 p-3">
+                <p className="text-white/70">เครื่องใช้ไฟฟ้า</p>
+                <p className="text-lg font-semibold">{applianceItems.length}</p>
+              </div>
+              <div className="rounded-md bg-white/15 p-3">
+                <p className="text-white/70">ประกัน</p>
+                <p className="text-lg font-semibold">{activeWarranties}</p>
+              </div>
+            </div>
           </div>
-          <Button type="submit">ดูข้อมูล</Button>
-        </form>
+          <form action="/expenses" className="grid content-between gap-3">
+            <div className="space-y-2">
+              <label htmlFor="expenses-home" className="text-sm font-medium">
+                บ้านของค่าใช้จ่าย
+              </label>
+              <select
+                id="expenses-home"
+                name="homeId"
+                defaultValue={home?.id}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {homes.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button type="submit">ดูข้อมูล</Button>
+          </form>
+        </div>
         <Card className="border-0 bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">รายการค่าใช้จ่าย</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">
+              รายการค่าใช้จ่ายทั่วไป ({normalExpenses.length})
+            </CardTitle>
             <CardDescription>
               {normalExpenses.length
                 ? "เพิ่ม แก้ไข และลบค่าใช้จ่ายทั่วไปของบ้าน"
                 : "ยังไม่มีค่าใช้จ่ายทั่วไป"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid max-h-[520px] gap-3 overflow-y-auto pr-3">
             {normalExpenses.length ? (
               normalExpenses.map((expense) => (
                 <Card key={expense.id} className="border shadow-sm">
@@ -160,16 +173,16 @@ export default async function ExpensesPage({
         </Card>
 
         <Card className="border-0 bg-white shadow-sm">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">
-              เครื่องใช้ไฟฟ้าและประกัน
+              เครื่องใช้ไฟฟ้าและประกัน ({applianceItems.length})
             </CardTitle>
             <CardDescription>
               จัดการเครื่องใช้ไฟฟ้า วันที่ซื้อ
               และวันหมดประกันในหน้าเดียวกับค่าใช้จ่าย
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid max-h-[520px] gap-3 overflow-y-auto pr-3">
             {applianceItems.length ? (
               <div className="grid gap-3">
                 {applianceItems.map(({ expense, appliance }) => (
@@ -205,15 +218,15 @@ export default async function ExpensesPage({
           </CardContent>
         </Card>
       </section>
-      <aside className="space-y-4">
+      <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
         <Card className="border-0 bg-white shadow-sm">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">เพิ่มรายการ</CardTitle>
             <CardDescription>
               บันทึกค่าใช้จ่าย และเพิ่มเครื่องใช้ไฟฟ้า/ประกันได้ในฟอร์มเดียว
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="max-h-[calc(100vh-140px)] overflow-y-auto pr-3">
             {home ? (
               <CreateExpenseForm homeId={home.id} homes={homes} rooms={rooms} />
             ) : (

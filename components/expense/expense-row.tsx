@@ -174,8 +174,8 @@ export function ExpenseRow({
   }
 
   return (
-    <div className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
-      <div className="grid gap-3">
+    <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="grid gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary">
             {getExpenseCategoryLabel(expense.category)}
@@ -200,7 +200,7 @@ export function ExpenseRow({
         </div>
         <div>
           <p className="text-base font-semibold">{expense.title}</p>
-          <p className="mt-1 text-2xl font-semibold text-primary">
+          <p className="mt-1 text-xl font-semibold text-primary">
             {formatMoney(expense.amount_minor, expense.currency)}
           </p>
           {expense.notes ? (

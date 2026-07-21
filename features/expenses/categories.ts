@@ -33,7 +33,18 @@ export const expenseCategoryGroups = [
       { value: "labor", label: "ค่าแรง" },
       { value: "demolition", label: "ค่ารื้อถอน" },
       { value: "furniture", label: "เฟอร์นิเจอร์" },
+    ],
+  },
+  {
+    label: "ของใช้และอุปกรณ์",
+    items: [
       { value: "household_supply", label: "ของใช้ในบ้าน" },
+      { value: "kitchen_supply", label: "ของใช้และอุปกรณ์ครัว" },
+      { value: "bathroom_supply", label: "ของใช้และอุปกรณ์ห้องน้ำ" },
+      { value: "cleaning_supply", label: "อุปกรณ์ทำความสะอาด" },
+      { value: "tools", label: "เครื่องมือช่าง" },
+      { value: "building_material", label: "วัสดุซ่อมแซม/ก่อสร้าง" },
+      { value: "decoration", label: "ของตกแต่งบ้าน" },
     ],
   },
   {

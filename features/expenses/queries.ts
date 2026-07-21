@@ -13,6 +13,7 @@ export type Expense = {
   notes: string | null;
   appointment_date: string | null;
   appointment_time: string | null;
+  is_paid: boolean;
 };
 
 export async function listExpenses(
@@ -25,7 +26,7 @@ export async function listExpenses(
   const { data, error } = await supabase
     .from("expenses")
     .select(
-      "id,home_id,room_id,title,category,amount_minor,currency,expense_date,notes,appointment_date,appointment_time",
+      "id,home_id,room_id,title,category,amount_minor,currency,expense_date,notes,appointment_date,appointment_time,is_paid",
     )
     .eq("home_id", homeId)
     .is("deleted_at", null)
@@ -35,7 +36,8 @@ export async function listExpenses(
   if (
     error?.message.includes("notes") ||
     error?.message.includes("appointment_date") ||
-    error?.message.includes("appointment_time")
+    error?.message.includes("appointment_time") ||
+    error?.message.includes("is_paid")
   ) {
     const { data: fallbackData, error: fallbackError } = await supabase
       .from("expenses")
@@ -54,6 +56,7 @@ export async function listExpenses(
       notes: null,
       appointment_date: null,
       appointment_time: null,
+      is_paid: true,
     }));
   }
 

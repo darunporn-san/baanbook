@@ -18,9 +18,14 @@ import {
   updateExpense,
 } from "@/features/expenses/actions";
 import { listExpenses } from "@/features/expenses/queries";
+import { expenseCategoryGroups } from "@/features/expenses/categories";
 import { listHomes } from "@/features/homes/queries";
 import { listRooms } from "@/features/rooms/queries";
-import { getAppointmentDateTime, isAppointmentDone } from "@/lib/appointments";
+import {
+  getAppointmentDateTime,
+  isAppointmentDone,
+  isAppointmentDueWithinDays,
+} from "@/lib/appointments";
 import { formatMoney } from "@/lib/format";
 
 export default async function ExpensesPage({
@@ -30,6 +35,11 @@ export default async function ExpensesPage({
     homeId?: string;
     view?: "general" | "appliance";
     page?: string;
+    q?: string;
+    category?: string;
+    roomId?: string;
+    month?: string;
+    payment?: "paid" | "unpaid";
   }>;
 }) {
   const homes = await listHomes();
@@ -37,7 +47,7 @@ export default async function ExpensesPage({
   const home = homes.find((item) => item.id === params?.homeId) ?? homes[0];
   const rooms = await listRooms(home?.id);
   const [expenses, appliances] = await Promise.all([
-    listExpenses(home?.id),
+    listExpenses(home?.id, 500),
     listAppliances(home?.id),
   ]);
   const total = expenses.reduce(
@@ -68,7 +78,7 @@ export default async function ExpensesPage({
 
     return b.expense_date.localeCompare(a.expense_date);
   });
-  const normalExpenses = sortedExpenses.filter(
+  const allNormalExpenses = sortedExpenses.filter(
     (expense) => expense.category !== "appliance",
   );
   const applianceExpenses = sortedExpenses.filter(
@@ -76,7 +86,7 @@ export default async function ExpensesPage({
   );
   const normalizeName = (value: string) => value.trim().toLocaleLowerCase();
   const matchedApplianceIds = new Set<string>();
-  const applianceItems = [
+  const allApplianceItems = [
     ...applianceExpenses.map((expense) => {
       const appliance = appliances.find(
         (item) =>
@@ -93,6 +103,60 @@ export default async function ExpensesPage({
       .map((appliance) => ({ expense: null, appliance })),
   ];
   const activeView = params?.view === "appliance" ? "appliance" : "general";
+  const search = params?.q?.trim() ?? "";
+  const normalizedSearch = search.toLocaleLowerCase();
+  const category = params?.category ?? "";
+  const roomId = params?.roomId ?? "";
+  const month = /^\d{4}-\d{2}$/.test(params?.month ?? "")
+    ? (params?.month ?? "")
+    : "";
+  const payment =
+    params?.payment === "paid" || params?.payment === "unpaid"
+      ? params.payment
+      : "";
+  const matchesRoom = (value: string | null | undefined) =>
+    !roomId || (roomId === "none" ? !value : value === roomId);
+  const matchesPayment = (isPaid: boolean | undefined) =>
+    !payment || (isPaid !== undefined && isPaid === (payment === "paid"));
+  const normalExpenses = allNormalExpenses.filter(
+    (expense) =>
+      (!normalizedSearch ||
+        `${expense.title} ${expense.notes ?? ""}`
+          .toLocaleLowerCase()
+          .includes(normalizedSearch)) &&
+      (!category || expense.category === category) &&
+      matchesRoom(expense.room_id) &&
+      matchesPayment(expense.is_paid) &&
+      (!month || expense.expense_date.startsWith(month)),
+  );
+  const applianceItems = allApplianceItems.filter(({ expense, appliance }) => {
+    const itemRoomId = expense?.room_id ?? appliance?.room_id;
+    const itemDate = expense?.expense_date ?? appliance?.purchase_date;
+    const searchableText = [
+      expense?.title,
+      expense?.notes,
+      appliance?.name,
+      appliance?.brand,
+      appliance?.model,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase();
+
+    return (
+      (!normalizedSearch || searchableText.includes(normalizedSearch)) &&
+      matchesRoom(itemRoomId) &&
+      matchesPayment(expense?.is_paid) &&
+      (!month || itemDate?.startsWith(month))
+    );
+  });
+  const activeFilterQuery = {
+    ...(search ? { q: search } : {}),
+    ...(activeView === "general" && category ? { category } : {}),
+    ...(roomId ? { roomId } : {}),
+    ...(month ? { month } : {}),
+    ...(payment ? { payment } : {}),
+  };
   const pageSize = 6;
   const itemCount =
     activeView === "general" ? normalExpenses.length : applianceItems.length;
@@ -108,6 +172,16 @@ export default async function ExpensesPage({
     pageStart,
     pageStart + pageSize,
   );
+  const filteredTotal =
+    activeView === "general"
+      ? normalExpenses.reduce(
+          (sum, expense) => sum + expense.amount_minor,
+          0,
+        )
+      : applianceItems.reduce(
+          (sum, item) => sum + (item.expense?.amount_minor ?? 0),
+          0,
+        );
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -169,6 +243,7 @@ export default async function ExpensesPage({
                 ))}
               </select>
             </div>
+            <input type="hidden" name="view" value={activeView} />
             <Button type="submit">ดูข้อมูล</Button>
           </form>
           <Card className="border-0 bg-white shadow-sm">
@@ -183,7 +258,11 @@ export default async function ExpensesPage({
                 <Link
                   href={{
                     pathname: "/expenses",
-                    query: { homeId: home?.id, view: "general" },
+                    query: {
+                      homeId: home?.id,
+                      view: "general",
+                      ...activeFilterQuery,
+                    },
                   }}
                   className={
                     activeView === "general"
@@ -197,7 +276,14 @@ export default async function ExpensesPage({
                 <Link
                   href={{
                     pathname: "/expenses",
-                    query: { homeId: home?.id, view: "appliance" },
+                    query: {
+                      homeId: home?.id,
+                      view: "appliance",
+                      ...(search ? { q: search } : {}),
+                      ...(roomId ? { roomId } : {}),
+                      ...(month ? { month } : {}),
+                      ...(payment ? { payment } : {}),
+                    },
                   }}
                   className={
                     activeView === "appliance"
@@ -208,6 +294,138 @@ export default async function ExpensesPage({
                 >
                   เครื่องใช้ไฟฟ้า ({applianceItems.length})
                 </Link>
+              </div>
+              <form
+                action="/expenses"
+                className="grid gap-3 rounded-lg border bg-secondary/20 p-3 sm:grid-cols-2 xl:grid-cols-5"
+              >
+                <input type="hidden" name="homeId" value={home?.id} />
+                <input type="hidden" name="view" value={activeView} />
+                <div className="space-y-1.5">
+                  <label htmlFor="expense-filter-q" className="text-xs font-medium">
+                    ค้นหารายการ
+                  </label>
+                  <input
+                    id="expense-filter-q"
+                    name="q"
+                    defaultValue={search}
+                    placeholder="ชื่อรายการ หรือรายละเอียด"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  />
+                </div>
+                {activeView === "general" ? (
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="expense-filter-category"
+                      className="text-xs font-medium"
+                    >
+                      หมวดหมู่
+                    </label>
+                    <select
+                      id="expense-filter-category"
+                      name="category"
+                      defaultValue={category}
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    >
+                      <option value="">ทุกหมวดหมู่</option>
+                      {expenseCategoryGroups.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.items
+                            .filter((item) => item.value !== "appliance")
+                            .map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="expense-filter-room"
+                    className="text-xs font-medium"
+                  >
+                    ห้อง
+                  </label>
+                  <select
+                    id="expense-filter-room"
+                    name="roomId"
+                    defaultValue={roomId}
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">ทุกห้อง</option>
+                    <option value="none">ไม่ระบุห้อง</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="expense-filter-month"
+                    className="text-xs font-medium"
+                  >
+                    เดือนที่จ่าย
+                  </label>
+                  <input
+                    id="expense-filter-month"
+                    name="month"
+                    type="month"
+                    defaultValue={month}
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="expense-filter-payment"
+                    className="text-xs font-medium"
+                  >
+                    สถานะการจ่าย
+                  </label>
+                  <select
+                    id="expense-filter-payment"
+                    name="payment"
+                    defaultValue={payment}
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">ทุกสถานะ</option>
+                    <option value="paid">จ่ายแล้ว</option>
+                    <option value="unpaid">ยังไม่จ่าย</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 sm:col-span-2 xl:col-span-5 xl:justify-end">
+                  <Button type="submit" className="flex-1 xl:flex-none">
+                    ใช้ตัวกรอง
+                  </Button>
+                  <Button asChild type="button" variant="outline">
+                    <Link
+                      href={{
+                        pathname: "/expenses",
+                        query: { homeId: home?.id, view: activeView },
+                      }}
+                    >
+                      ล้างตัวกรอง
+                    </Link>
+                  </Button>
+                </div>
+              </form>
+              <div className="grid gap-3 rounded-lg bg-primary/10 p-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">ผลลัพธ์ที่พบ</p>
+                  <p className="mt-1 text-lg font-semibold">{itemCount} รายการ</p>
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-xs text-muted-foreground">
+                    รวมค่าใช้จ่ายที่กรอง
+                  </p>
+                  <p className="mt-1 text-xl font-semibold text-primary">
+                    {formatMoney(filteredTotal, home?.default_currency)}
+                  </p>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="grid gap-3">
@@ -220,6 +438,10 @@ export default async function ExpensesPage({
                           expense={expense}
                           rooms={rooms}
                           appointmentDone={isAppointmentDone(expense, now)}
+                          paymentUrgent={
+                            !expense.is_paid &&
+                            isAppointmentDueWithinDays(expense, 3, now)
+                          }
                           updateAction={updateExpense}
                           deleteAction={deleteExpense}
                         />
@@ -244,6 +466,12 @@ export default async function ExpensesPage({
                         rooms={rooms}
                         appointmentDone={
                           expense ? isAppointmentDone(expense, now) : false
+                        }
+                        paymentUrgent={
+                          expense
+                            ? !expense.is_paid &&
+                              isAppointmentDueWithinDays(expense, 3, now)
+                            : false
                         }
                         updateAction={updateApplianceExpense}
                         deleteAction={deleteApplianceExpense}
@@ -270,6 +498,7 @@ export default async function ExpensesPage({
                           query: {
                             homeId: home?.id,
                             view: activeView,
+                            ...activeFilterQuery,
                             page: currentPage - 1,
                           },
                         }}
@@ -291,6 +520,7 @@ export default async function ExpensesPage({
                           query: {
                             homeId: home?.id,
                             view: activeView,
+                            ...activeFilterQuery,
                             page: currentPage + 1,
                           },
                         }}

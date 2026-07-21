@@ -47,7 +47,7 @@ export function CreateExpenseForm({
           required
         />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="expense-amount">จำนวนเงิน</Label>
           <Input
@@ -68,6 +68,18 @@ export function CreateExpenseForm({
             type="date"
             defaultValue={new Date().toISOString().slice(0, 10)}
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="expense-payment-status">สถานะการจ่าย</Label>
+          <select
+            id="expense-payment-status"
+            name="is_paid"
+            defaultValue="true"
+            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="true">จ่ายแล้ว</option>
+            <option value="false">ยังไม่จ่าย</option>
+          </select>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

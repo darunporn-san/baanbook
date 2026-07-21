@@ -29,6 +29,7 @@ export async function createExpense(formData: FormData) {
     String(formData.get("appointment_date") ?? "") || null;
   const appointmentTime =
     String(formData.get("appointment_time") ?? "").trim() || null;
+  const isPaid = String(formData.get("is_paid") ?? "true") !== "false";
   const shouldCreateAppliance =
     String(formData.get("create_appliance") ?? "") === "1";
   const applianceName =
@@ -64,6 +65,7 @@ export async function createExpense(formData: FormData) {
       notes,
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
+      is_paid: isPaid,
     })
     .select("id")
     .single();
@@ -72,7 +74,8 @@ export async function createExpense(formData: FormData) {
   if (
     error?.message.includes("notes") ||
     error?.message.includes("appointment_date") ||
-    error?.message.includes("appointment_time")
+    error?.message.includes("appointment_time") ||
+    error?.message.includes("is_paid")
   ) {
     const fallback = await supabase
       .from("expenses")
@@ -159,13 +162,15 @@ export async function updateExpense(formData: FormData) {
       appointment_date: String(formData.get("appointment_date") ?? "") || null,
       appointment_time:
         String(formData.get("appointment_time") ?? "").trim() || null,
+      is_paid: String(formData.get("is_paid") ?? "true") !== "false",
     })
     .eq("id", id);
 
   if (
     error?.message.includes("notes") ||
     error?.message.includes("appointment_date") ||
-    error?.message.includes("appointment_time")
+    error?.message.includes("appointment_time") ||
+    error?.message.includes("is_paid")
   ) {
     await supabase
       .from("expenses")
@@ -204,6 +209,7 @@ export async function updateApplianceExpense(formData: FormData) {
     String(formData.get("appointment_date") ?? "") || null;
   const appointmentTime =
     String(formData.get("appointment_time") ?? "").trim() || null;
+  const isPaid = String(formData.get("is_paid") ?? "true") !== "false";
   if (!title || !Number.isFinite(amount)) redirect(expensesPath(homeId));
 
   const supabase = await createClient();
@@ -218,6 +224,7 @@ export async function updateApplianceExpense(formData: FormData) {
       notes,
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
+      is_paid: isPaid,
     };
     const { error } = await supabase
       .from("expenses")
@@ -227,7 +234,8 @@ export async function updateApplianceExpense(formData: FormData) {
     if (
       error?.message.includes("notes") ||
       error?.message.includes("appointment_date") ||
-      error?.message.includes("appointment_time")
+      error?.message.includes("appointment_time") ||
+      error?.message.includes("is_paid")
     ) {
       await supabase
         .from("expenses")
@@ -260,6 +268,7 @@ export async function updateApplianceExpense(formData: FormData) {
         notes,
         appointment_date: appointmentDate,
         appointment_time: appointmentTime,
+        is_paid: isPaid,
       })
       .select("id")
       .single();

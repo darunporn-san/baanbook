@@ -17,12 +17,14 @@ export function ExpenseRow({
   expense,
   rooms,
   appointmentDone = false,
+  paymentUrgent = false,
   updateAction,
   deleteAction,
 }: {
   expense: Expense;
   rooms: Room[];
   appointmentDone?: boolean;
+  paymentUrgent?: boolean;
   updateAction: (formData: FormData) => void;
   deleteAction: (formData: FormData) => void;
 }) {
@@ -92,7 +94,7 @@ export function ExpenseRow({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label htmlFor={`expense-date-${expense.id}`}>วันที่</Label>
             <Input
@@ -135,6 +137,20 @@ export function ExpenseRow({
                   {room.name}
                 </option>
               ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`expense-payment-status-${expense.id}`}>
+              สถานะการจ่าย
+            </Label>
+            <select
+              id={`expense-payment-status-${expense.id}`}
+              name="is_paid"
+              defaultValue={String(expense.is_paid)}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="true">จ่ายแล้ว</option>
+              <option value="false">ยังไม่จ่าย</option>
             </select>
           </div>
         </div>
@@ -204,6 +220,17 @@ export function ExpenseRow({
             </span>
             <span className="text-xs text-muted-foreground">
               {roomName ?? commonText.noRoom}
+            </span>
+            <span
+              className={
+                expense.is_paid
+                  ? "rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary"
+                  : paymentUrgent
+                    ? "rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700"
+                  : "rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]"
+              }
+            >
+              {expense.is_paid ? "จ่ายแล้ว" : "ยังไม่จ่าย"}
             </span>
             {appointmentText ? (
               appointmentDone ? (

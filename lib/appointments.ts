@@ -14,3 +14,14 @@ export function isAppointmentDone(appointment: Appointment, now = new Date()) {
   const dateTime = getAppointmentDateTime(appointment);
   return dateTime ? dateTime.getTime() < now.getTime() : false;
 }
+
+export function isAppointmentDueWithinDays(
+  appointment: Appointment,
+  days: number,
+  now = new Date(),
+) {
+  const dateTime = getAppointmentDateTime(appointment);
+  return dateTime
+    ? dateTime.getTime() - now.getTime() <= days * 24 * 60 * 60 * 1000
+    : false;
+}

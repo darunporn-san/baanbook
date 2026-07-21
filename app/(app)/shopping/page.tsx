@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
   CardContent,
@@ -49,39 +50,23 @@ export default async function ShoppingPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#ffd36a] p-5 text-[#514227] shadow-sm sm:p-6">
-        <p className="text-sm font-medium text-[#705b2f]">วางแผนการซื้อ</p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">รายการซื้อ</h1>
-        <p className="mt-2 text-sm text-[#705b2f]">
-          ติดตามของที่วางแผนซื้อและซื้อแล้วสำหรับบ้าน
-        </p>
+      <section className="grid gap-5 rounded-xl bg-[#ffd36a] p-5 text-[#514227] shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+        <div>
+          <p className="text-sm font-medium text-[#705b2f]">วางแผนการซื้อ</p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">รายการซื้อ</h1>
+          <p className="mt-2 text-sm text-[#705b2f]">
+            ติดตามของที่วางแผนซื้อและซื้อแล้วสำหรับบ้าน
+          </p>
+        </div>
+        <HeaderHomeSwitcher
+          action="/shopping"
+          label="บ้านของรายการซื้อ"
+          homes={homes}
+          homeId={home?.id}
+        />
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
-          <form
-            action="/shopping"
-            className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between"
-          >
-            <div className="space-y-2">
-              <label htmlFor="shopping-home" className="text-sm font-medium">
-                บ้านของรายการซื้อ
-              </label>
-              <select
-                id="shopping-home"
-                name="homeId"
-                defaultValue={home?.id}
-                className="flex h-10 w-full min-w-64 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {homes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button type="submit">ดูข้อมูล</Button>
-          </form>
-
           <div className="grid gap-3 sm:grid-cols-3">
             <Card className="border-0 bg-[#00bfa5] text-white shadow-sm">
               <CardHeader>

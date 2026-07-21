@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ApplianceExpenseCard } from "@/components/expense/appliance-expense-card";
 import { CreateExpenseForm } from "@/components/expense/create-expense-form";
 import { ExpenseRow } from "@/components/expense/expense-row";
+import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import { listAppliances } from "@/features/appliances/queries";
 import {
   deleteApplianceExpense,
@@ -50,14 +51,33 @@ export default async function ExpensesPage({
     listExpenses(home?.id, 500),
     listAppliances(home?.id),
   ]);
+  const now = new Date();
+  const currentMonth = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+  }).format(now);
+  const paidExpenses = expenses.filter((expense) => expense.is_paid);
+  const unpaidExpenses = expenses.filter((expense) => !expense.is_paid);
+  const currentMonthExpenses = expenses.filter((expense) =>
+    expense.expense_date.startsWith(currentMonth),
+  );
   const total = expenses.reduce(
     (sum, expense) => sum + expense.amount_minor,
     0,
   );
-  const activeWarranties = appliances.filter(
-    (item) => item.warranty_end_date || item.warranty_lifetime,
-  ).length;
-  const now = new Date();
+  const paidTotal = paidExpenses.reduce(
+    (sum, expense) => sum + expense.amount_minor,
+    0,
+  );
+  const unpaidTotal = unpaidExpenses.reduce(
+    (sum, expense) => sum + expense.amount_minor,
+    0,
+  );
+  const currentMonthTotal = currentMonthExpenses.reduce(
+    (sum, expense) => sum + expense.amount_minor,
+    0,
+  );
   const sortedExpenses = [...expenses].sort((a, b) => {
     const aDone = isAppointmentDone(a, now);
     const bDone = isAppointmentDone(b, now);
@@ -185,7 +205,7 @@ export default async function ExpensesPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="grid gap-6 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)] lg:items-end">
+      <section className="grid gap-5 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/70">การเงินของบ้าน</p>
           <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
@@ -198,54 +218,61 @@ export default async function ExpensesPage({
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-3 text-sm min-[420px]:grid-cols-3">
-          <div className="rounded-lg border border-white/15 bg-white/15 p-4">
-            <p className="text-white/70">ทั่วไป</p>
-            <p className="mt-2 text-2xl font-semibold">
-              {normalExpenses.length}
+        <HeaderHomeSwitcher
+          action="/expenses"
+          label="บ้านของค่าใช้จ่าย"
+          homes={homes}
+          homeId={home?.id}
+          hiddenFields={{ view: activeView }}
+        />
+      </section>
+      <section className="grid gap-3 sm:grid-cols-3">
+        <Card className="border-0 bg-white shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">จ่ายแล้ว</p>
+            <p className="mt-1 text-xl font-semibold text-primary">
+              {formatMoney(paidTotal, home?.default_currency)}
             </p>
-            <p className="mt-1 text-xs text-white/60">รายการ</p>
-          </div>
-          <div className="rounded-lg border border-white/15 bg-white/15 p-4">
-            <p className="text-white/70">เครื่องใช้ไฟฟ้า</p>
-            <p className="mt-2 text-2xl font-semibold">
-              {applianceItems.length}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {paidExpenses.length} รายการ
             </p>
-            <p className="mt-1 text-xs text-white/60">รายการ</p>
-          </div>
-          <div className="rounded-lg border border-white/15 bg-white/15 p-4">
-            <p className="text-white/70">ประกันที่ใช้งานอยู่</p>
-            <p className="mt-2 text-2xl font-semibold">{activeWarranties}</p>
-            <p className="mt-1 text-xs text-white/60">รายการ</p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+        <Card
+          className={
+            unpaidExpenses.length
+              ? "border-red-200 bg-red-50 shadow-sm"
+              : "border-0 bg-white shadow-sm"
+          }
+        >
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">ยังไม่จ่าย</p>
+            <p
+              className={`mt-1 text-xl font-semibold ${
+                unpaidExpenses.length ? "text-red-700" : "text-foreground"
+              }`}
+            >
+              {formatMoney(unpaidTotal, home?.default_currency)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {unpaidExpenses.length} รายการ
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-[#fff5d8] shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs text-[#705b2f]">เดือนนี้</p>
+            <p className="mt-1 text-xl font-semibold text-[#514227]">
+              {formatMoney(currentMonthTotal, home?.default_currency)}
+            </p>
+            <p className="mt-1 text-xs text-[#705b2f]">
+              {currentMonthExpenses.length} รายการ
+            </p>
+          </CardContent>
+        </Card>
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="grid min-w-0 gap-4">
-          <form
-            action="/expenses"
-            className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between"
-          >
-            <div className="space-y-2">
-              <label htmlFor="expenses-home" className="text-sm font-medium">
-                บ้านของค่าใช้จ่าย
-              </label>
-              <select
-                id="expenses-home"
-                name="homeId"
-                defaultValue={home?.id}
-                className="flex h-10 w-full min-w-64 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {homes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input type="hidden" name="view" value={activeView} />
-            <Button type="submit">ดูข้อมูล</Button>
-          </form>
           <Card className="border-0 bg-white shadow-sm">
             <CardHeader className="gap-4 pb-4">
               <div>

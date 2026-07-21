@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
   CardContent,
@@ -41,14 +41,22 @@ export default async function WarrantyPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#ffd36a] p-5 text-[#514227] shadow-sm sm:p-6">
-        <p className="text-sm font-medium text-[#705b2f]">
-          การคุ้มครองทรัพย์สิน
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">ประกัน</h1>
-        <p className="mt-2 text-sm text-[#705b2f]">
-          ติดตามวันหมดประกันเครื่องใช้ไฟฟ้าแยกตามบ้าน
-        </p>
+      <section className="grid gap-5 rounded-xl bg-[#ffd36a] p-5 text-[#514227] shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+        <div>
+          <p className="text-sm font-medium text-[#705b2f]">
+            การคุ้มครองทรัพย์สิน
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">ประกัน</h1>
+          <p className="mt-2 text-sm text-[#705b2f]">
+            ติดตามวันหมดประกันเครื่องใช้ไฟฟ้าแยกตามบ้าน
+          </p>
+        </div>
+        <HeaderHomeSwitcher
+          action="/warranty"
+          label="บ้านของประกัน"
+          homes={homes}
+          homeId={home?.id}
+        />
       </section>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -110,31 +118,6 @@ export default async function WarrantyPage({
         </Card>
 
         <aside className="order-first space-y-4 lg:order-last lg:sticky lg:top-20">
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">เลือกบ้าน</CardTitle>
-              <CardDescription>ดูประกันเฉพาะบ้านที่เลือก</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form action="/warranty" className="grid gap-3">
-                <select
-                  id="warranty-home"
-                  name="homeId"
-                  defaultValue={home?.id}
-                  aria-label="บ้านของประกัน"
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {homes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-                <Button type="submit">ดูข้อมูล</Button>
-              </form>
-            </CardContent>
-          </Card>
-
           <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
             {[
               ["ใกล้หมด", expiringSoon.length, "bg-[#fff5d8] text-[#705b2f]"],

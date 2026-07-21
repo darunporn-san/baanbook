@@ -3,6 +3,7 @@ import { CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EditComparisonOptionDialog } from "@/components/planning/edit-comparison-option-dialog";
 import { EditComparisonPlanDialog } from "@/components/planning/edit-comparison-plan-dialog";
+import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
   CardContent,
@@ -57,17 +58,26 @@ export default async function PlanningPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6">
-        <p className="text-sm font-medium text-white/70">
-          ตัดสินใจก่อนซื้อหรือจ้าง
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
-          วางแผนและเทียบราคา
-        </h1>
-        <p className="mt-2 text-sm text-white/80">
-          เทียบราคาสินค้า ค่าติดตั้ง ร้านค้า และช่าง
-          ก่อนยืนยันตัวเลือกที่เหมาะสม
-        </p>
+      <section className="grid gap-5 rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+        <div>
+          <p className="text-sm font-medium text-white/70">
+            ตัดสินใจก่อนซื้อหรือจ้าง
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
+            วางแผนและเทียบราคา
+          </h1>
+          <p className="mt-2 text-sm text-white/80">
+            เทียบราคาสินค้า ค่าติดตั้ง ร้านค้า และช่าง
+            ก่อนยืนยันตัวเลือกที่เหมาะสม
+          </p>
+        </div>
+        <HeaderHomeSwitcher
+          action="/planning"
+          label="บ้านของแผน"
+          homes={homes}
+          homeId={home?.id}
+          hiddenFields={{ view: activeView }}
+        />
       </section>
 
       {params?.error ? (
@@ -81,31 +91,6 @@ export default async function PlanningPage({
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-4">
-          <form
-            action="/planning"
-            className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between"
-          >
-            <input type="hidden" name="view" value={activeView} />
-            <div className="grid gap-2">
-              <label htmlFor="planning-home" className="text-sm font-medium">
-                บ้านของแผน
-              </label>
-              <select
-                id="planning-home"
-                name="homeId"
-                defaultValue={home?.id}
-                className={`${fieldClass} sm:min-w-72`}
-              >
-                {homes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button type="submit">ดูข้อมูล</Button>
-          </form>
-
           <div className="grid grid-cols-2 gap-3">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-4">

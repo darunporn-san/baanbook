@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   CardContent,
   Card,
@@ -39,9 +39,10 @@ export default async function TimelinePage({
     (event) => !appointmentDone(event),
   );
   const completedAppointments = appointments.filter(appointmentDone);
-  const activeView = ["upcoming", "completed"].includes(params?.view ?? "")
-    ? params?.view
-    : "all";
+  const activeView =
+    params?.view === "upcoming" || params?.view === "completed"
+      ? params.view
+      : "all";
   const visibleEvents = events.filter((event) => {
     if (activeView === "upcoming")
       return event.event_type === "appointment" && !appointmentDone(event);
@@ -52,13 +53,22 @@ export default async function TimelinePage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6">
-        <p className="text-sm font-medium text-white/70">กำหนดการของบ้าน</p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">ไทม์ไลน์</h1>
-        <p className="mt-2 text-sm text-white/80">
-          วันที่ซื้อ นัดหมาย วันหมดประกัน และกำหนดซ่อมของ{" "}
-          {home?.name ?? "บ้านของคุณ"}
-        </p>
+      <section className="grid gap-5 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+        <div>
+          <p className="text-sm font-medium text-white/70">กำหนดการของบ้าน</p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">ไทม์ไลน์</h1>
+          <p className="mt-2 text-sm text-white/80">
+            วันที่ซื้อ นัดหมาย วันหมดประกัน และกำหนดซ่อมของ{" "}
+            {home?.name ?? "บ้านของคุณ"}
+          </p>
+        </div>
+        <HeaderHomeSwitcher
+          action="/timeline"
+          label="บ้านของไทม์ไลน์"
+          homes={homes}
+          homeId={home?.id}
+          hiddenFields={{ view: activeView }}
+        />
       </section>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -126,32 +136,6 @@ export default async function TimelinePage({
         </Card>
 
         <aside className="order-first space-y-4 lg:order-last lg:sticky lg:top-20">
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">เลือกบ้าน</CardTitle>
-              <CardDescription>ดูไทม์ไลน์เฉพาะบ้านที่เลือก</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form action="/timeline" className="grid gap-3">
-                <input type="hidden" name="view" value={activeView} />
-                <select
-                  id="timeline-home"
-                  name="homeId"
-                  defaultValue={home?.id}
-                  aria-label="บ้านของไทม์ไลน์"
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {homes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-                <Button type="submit">ดูข้อมูล</Button>
-              </form>
-            </CardContent>
-          </Card>
-
           <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
             {[
               ["ไทม์ไลน์ทั้งหมด", events.length],

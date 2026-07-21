@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -79,41 +80,25 @@ export default async function MortgagePage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6">
-        <p className="text-sm font-medium text-white/70">ภาระทางการเงิน</p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
-          สินเชื่อบ้าน
-        </h1>
-        <p className="mt-2 text-sm text-white/80">
-          ติดตามเงื่อนไขเงินกู้ ดอกเบี้ยรายปี และประวัติการชำระ
-        </p>
+      <section className="grid gap-5 rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+        <div>
+          <p className="text-sm font-medium text-white/70">ภาระทางการเงิน</p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
+            สินเชื่อบ้าน
+          </h1>
+          <p className="mt-2 text-sm text-white/80">
+            ติดตามเงื่อนไขเงินกู้ ดอกเบี้ยรายปี และประวัติการชำระ
+          </p>
+        </div>
+        <HeaderHomeSwitcher
+          action="/mortgage"
+          label="บ้านของสินเชื่อ"
+          homes={homes}
+          homeId={home?.id}
+        />
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
-          <form
-            action="/mortgage"
-            className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between"
-          >
-            <div className="space-y-2">
-              <label htmlFor="mortgage-home" className="text-sm font-medium">
-                บ้านของสินเชื่อ
-              </label>
-              <select
-                id="mortgage-home"
-                name="homeId"
-                defaultValue={home?.id}
-                className="flex h-10 w-full min-w-64 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {homes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button type="submit">ดูข้อมูล</Button>
-          </form>
-
           <div className="grid gap-3 sm:grid-cols-3">
             <Card className="border-0 bg-[#00bfa5] text-white shadow-sm">
               <CardHeader>

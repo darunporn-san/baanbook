@@ -1,5 +1,6 @@
 import { CalendarDays, Hammer, MapPin, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
   CardContent,
@@ -51,40 +52,24 @@ export default async function RenovationsPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6">
-        <p className="text-sm font-medium text-white/75">จัดการโปรเจกต์</p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">รีโนเวท</h1>
-        <p className="mt-2 text-sm text-white/80">
-          ดูงบประมาณ สถานะงาน ผู้รับเหมา และกำหนดการในหน้าเดียว
-        </p>
+      <section className="grid gap-5 rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+        <div>
+          <p className="text-sm font-medium text-white/75">จัดการโปรเจกต์</p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">รีโนเวท</h1>
+          <p className="mt-2 text-sm text-white/80">
+            ดูงบประมาณ สถานะงาน ผู้รับเหมา และกำหนดการในหน้าเดียว
+          </p>
+        </div>
+        <HeaderHomeSwitcher
+          action="/renovations"
+          label="บ้านของงานรีโนเวท"
+          homes={homes}
+          homeId={home?.id}
+        />
       </section>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
-          <form
-            action="/renovations"
-            className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between"
-          >
-            <div className="grid gap-2">
-              <label htmlFor="renovation-home" className="text-sm font-medium">
-                บ้านของงานรีโนเวท
-              </label>
-              <select
-                id="renovation-home"
-                name="homeId"
-                defaultValue={home?.id}
-                className={`${fieldClass} sm:min-w-72`}
-              >
-                {homes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button type="submit">ดูข้อมูล</Button>
-          </form>
-
           <section className="grid grid-cols-2 gap-3 xl:grid-cols-3">
             <Card className="border-0 shadow-sm">
               <CardContent className="flex items-center gap-3 p-4">

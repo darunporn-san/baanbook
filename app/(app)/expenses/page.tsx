@@ -111,24 +111,38 @@ export default async function ExpensesPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6">
-        <p className="text-sm font-medium text-white/70">การเงินของบ้าน</p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">ค่าใช้จ่าย</h1>
-        <p className="mt-2 text-sm text-white/80">
-          รวมค่าใช้จ่าย {formatMoney(total, home?.default_currency)}
-        </p>
-        <div className="mt-4 grid grid-cols-3 gap-2 text-sm sm:max-w-xl">
-          <div className="rounded-md bg-white/15 p-3">
+      <section className="grid gap-6 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)] lg:items-end">
+        <div>
+          <p className="text-sm font-medium text-white/70">การเงินของบ้าน</p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
+            ค่าใช้จ่าย
+          </h1>
+          <div className="mt-5">
+            <p className="text-xs text-white/70">รวมค่าใช้จ่ายทั้งหมด</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight">
+              {formatMoney(total, home?.default_currency)}
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 text-sm min-[420px]:grid-cols-3">
+          <div className="rounded-lg border border-white/15 bg-white/15 p-4">
             <p className="text-white/70">ทั่วไป</p>
-            <p className="text-lg font-semibold">{normalExpenses.length}</p>
+            <p className="mt-2 text-2xl font-semibold">
+              {normalExpenses.length}
+            </p>
+            <p className="mt-1 text-xs text-white/60">รายการ</p>
           </div>
-          <div className="rounded-md bg-white/15 p-3">
+          <div className="rounded-lg border border-white/15 bg-white/15 p-4">
             <p className="text-white/70">เครื่องใช้ไฟฟ้า</p>
-            <p className="text-lg font-semibold">{applianceItems.length}</p>
+            <p className="mt-2 text-2xl font-semibold">
+              {applianceItems.length}
+            </p>
+            <p className="mt-1 text-xs text-white/60">รายการ</p>
           </div>
-          <div className="rounded-md bg-white/15 p-3">
-            <p className="text-white/70">ประกัน</p>
-            <p className="text-lg font-semibold">{activeWarranties}</p>
+          <div className="rounded-lg border border-white/15 bg-white/15 p-4">
+            <p className="text-white/70">ประกันที่ใช้งานอยู่</p>
+            <p className="mt-2 text-2xl font-semibold">{activeWarranties}</p>
+            <p className="mt-1 text-xs text-white/60">รายการ</p>
           </div>
         </div>
       </section>

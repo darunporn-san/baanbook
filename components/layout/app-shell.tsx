@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Clock,
@@ -31,12 +32,13 @@ const navItems = [
   { href: "/renovations", label: "รีโนเวท", icon: Home },
   { href: "/shopping", label: "รายการซื้อ", icon: ShoppingCart },
   { href: "/mortgage", label: "สินเชื่อบ้าน", icon: Landmark },
-  { href: "/documents", label: "เอกสาร", icon: FileText },
+  // { href: "/documents", label: "เอกสาร", icon: FileText },
   { href: "/timeline", label: "ไทม์ไลน์", icon: Clock },
-  { href: "/settings", label: "ตั้งค่า", icon: Settings },
+  // { href: "/settings", label: "ตั้งค่า", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -93,31 +95,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               เมนู
             </span>
           </button>
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex h-10 w-full items-center justify-start gap-3 rounded-sm px-3 text-white/80 hover:bg-white/15 hover:text-white",
-                !isExpanded &&
-                  "md:w-10 md:justify-center md:self-center md:px-0",
-              )}
-              aria-label={item.label}
-              onClick={() => setIsMobileOpen(false)}
-            >
-              <item.icon className="h-5 w-5" />
-              <span
+          {navItems.map((item) => {
+            const isActive =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
                 className={cn(
-                  "text-sm font-medium",
-                  !isExpanded && "md:hidden",
+                  "flex h-10 w-full items-center justify-start gap-3 rounded-sm px-3 text-white/80 hover:bg-white/15 hover:text-white",
+                  isActive && "bg-white/15 text-white",
+                  !isExpanded &&
+                    "md:w-10 md:justify-center md:self-center md:px-0",
                 )}
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
+                onClick={() => setIsMobileOpen(false)}
               >
-                {item.label}
-              </span>
-            </Link>
-          ))}
+                <item.icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    isActive && "font-bold",
+                    !isExpanded && "md:hidden",
+                  )}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
         </nav>
-        <div className="flex flex-col gap-2">
+        {/* <div className="flex flex-col gap-2">
           <button
             className={cn(
               "flex h-10 w-full items-center justify-start gap-3 rounded-sm px-3 text-white/70",
@@ -146,7 +156,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ออก
             </span>
           </button>
-        </div>
+        </div> */}
       </aside>
       {isMobileOpen ? (
         <button
@@ -172,9 +182,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <Menu className="h-6 w-6" />
           </button>
-          <p className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary shadow-sm">
+          {/* <p className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary shadow-sm">
             เฟส 1
-          </p>
+          </p> */}
         </header>
         <main className="p-4 md:p-6">{children}</main>
       </div>

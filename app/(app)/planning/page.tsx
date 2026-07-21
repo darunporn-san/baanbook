@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EditComparisonOptionDialog } from "@/components/planning/edit-comparison-option-dialog";
+import { EditComparisonPlanDialog } from "@/components/planning/edit-comparison-plan-dialog";
 import {
   Card,
   CardContent,
@@ -17,6 +19,7 @@ import {
   deleteComparisonPlan,
 } from "@/features/planning/actions";
 import { listComparisonPlans } from "@/features/planning/queries";
+import { priceTotal } from "@/features/planning/pricing";
 import { listRooms } from "@/features/rooms/queries";
 import { formatMoney } from "@/lib/format";
 
@@ -156,65 +159,105 @@ export default async function PlanningPage({
                 const room = rooms.find((item) => item.id === plan.room_id);
                 const totals = plan.options.map(
                   (option) =>
-                    option.product_price_minor * option.quantity +
-                    option.installation_price_minor,
+                    priceTotal(
+                      option.product_price_minor,
+                      option.quantity,
+                      option.product_price_basis,
+                    ) +
+                    priceTotal(
+                      option.installation_price_minor,
+                      option.quantity,
+                      option.installation_price_basis,
+                    ),
                 );
                 const lowestTotal = totals.length ? Math.min(...totals) : null;
 
                 return (
                   <Card
                     key={plan.id}
-                    className="overflow-hidden border-0 shadow-sm"
+                    className="relative overflow-hidden border-0 shadow-sm"
                   >
-                    <CardHeader className="border-b bg-secondary/35">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                plan.status === "confirmed"
-                                  ? "bg-[#e8f5f3] text-primary"
-                                  : "bg-[#fff5d8] text-[#705b2f]"
-                              }`}
-                            >
-                              {plan.status === "confirmed"
-                                ? "ยืนยันแล้ว"
-                                : "กำลังเปรียบเทียบ"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ส่งไป {destinationLabels[plan.destination_type]}
-                            </span>
-                          </div>
-                          <CardTitle className="mt-3 text-lg">
-                            {plan.title}
-                          </CardTitle>
-                          <CardDescription className="mt-1">
-                            {[room?.name, plan.notes]
-                              .filter(Boolean)
-                              .join(" · ") || "ไม่ระบุห้อง"}
-                          </CardDescription>
+                    <div className="absolute right-5 top-5 z-10 flex items-center gap-1 rounded-lg border bg-white/80 p-1 shadow-sm backdrop-blur-sm">
+                      {plan.status === "comparing" ? (
+                        <EditComparisonPlanDialog
+                          plan={plan}
+                          rooms={rooms.map(({ id, name }) => ({ id, name }))}
+                        />
+                      ) : null}
+                      <form action={deleteComparisonPlan}>
+                        <input type="hidden" name="id" value={plan.id} />
+                        <input
+                          type="hidden"
+                          name="home_id"
+                          value={plan.home_id}
+                        />
+                        <Button size="sm" variant="ghost">
+                          ลบแผน
+                        </Button>
+                      </form>
+                    </div>
+                    <details open>
+                      <summary className="cursor-pointer list-none border-b bg-secondary/35 p-5 transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                        <div className="flex min-h-10 flex-wrap items-center gap-2 pr-40">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              plan.status === "confirmed"
+                                ? "bg-[#e8f5f3] text-primary"
+                                : "bg-[#fff5d8] text-[#705b2f]"
+                            }`}
+                          >
+                            {plan.status === "confirmed"
+                              ? "ยืนยันแล้ว"
+                              : "กำลังเปรียบเทียบ"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            ส่งไป {destinationLabels[plan.destination_type]} ·{" "}
+                            {plan.options.length} ตัวเลือก
+                          </span>
                         </div>
-                        <form action={deleteComparisonPlan}>
-                          <input type="hidden" name="id" value={plan.id} />
-                          <input
-                            type="hidden"
-                            name="home_id"
-                            value={plan.home_id}
-                          />
-                          <Button size="sm" variant="ghost">
-                            ลบแผน
-                          </Button>
-                        </form>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid gap-3 p-4">
+                        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <CardTitle className="text-xl">
+                              {plan.title}
+                            </CardTitle>
+                            <CardDescription className="mt-1">
+                              {[room?.name, plan.notes]
+                                .filter(Boolean)
+                                .join(" · ") || "ไม่ระบุห้อง"}
+                            </CardDescription>
+                          </div>
+                          <div className="min-w-40 shrink-0 rounded-xl border border-primary/10 bg-[#e8f5f3] px-4 py-3 text-right">
+                            <p className="text-[11px] text-muted-foreground">
+                              ราคาต่ำสุด ณ ตอนนี้
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-primary">
+                              {lowestTotal == null
+                                ? "ยังไม่มีราคา"
+                                : formatMoney(
+                                    lowestTotal,
+                                    plan.options[0]?.currency ??
+                                      home?.default_currency,
+                                  )}
+                            </p>
+                          </div>
+                        </div>
+                      </summary>
+                      <CardContent className="grid gap-3 p-4">
                       {plan.options.length ? (
-                        <div className="grid gap-3 xl:grid-cols-2">
+                        <div className="grid items-start gap-3 xl:grid-cols-2">
                           {plan.options.map((option) => {
                             const productTotal =
-                              option.product_price_minor * option.quantity;
-                            const total =
-                              productTotal + option.installation_price_minor;
+                              priceTotal(
+                                option.product_price_minor,
+                                option.quantity,
+                                option.product_price_basis,
+                              );
+                            const installationTotal = priceTotal(
+                              option.installation_price_minor,
+                              option.quantity,
+                              option.installation_price_basis,
+                            );
+                            const total = productTotal + installationTotal;
                             const selected =
                               plan.selected_option_id === option.id;
 
@@ -245,10 +288,13 @@ export default async function PlanningPage({
                                   ) : null}
                                 </div>
 
-                                <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
+                                <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                                   <div className="rounded-md bg-secondary/60 p-2">
                                     <p className="text-[11px] text-muted-foreground">
-                                      ราคาต่อชิ้น
+                                      ราคาสินค้า
+                                      {option.product_price_basis === "per_unit"
+                                        ? "/ชิ้น"
+                                        : "รวม"}
                                     </p>
                                     <p className="mt-1 font-medium">
                                       {formatMoney(
@@ -279,11 +325,26 @@ export default async function PlanningPage({
                                   </div>
                                   <div className="rounded-md bg-secondary/60 p-2">
                                     <p className="text-[11px] text-muted-foreground">
-                                      ติดตั้ง
+                                      ค่าติดตั้ง
+                                      {option.installation_price_basis ===
+                                      "per_unit"
+                                        ? "/ชิ้น"
+                                        : "รวม"}
                                     </p>
                                     <p className="mt-1 font-medium">
                                       {formatMoney(
                                         option.installation_price_minor,
+                                        option.currency,
+                                      )}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-md bg-secondary/60 p-2">
+                                    <p className="text-[11px] text-muted-foreground">
+                                      รวมติดตั้ง
+                                    </p>
+                                    <p className="mt-1 font-medium">
+                                      {formatMoney(
+                                        installationTotal,
                                         option.currency,
                                       )}
                                     </p>
@@ -320,6 +381,10 @@ export default async function PlanningPage({
                                   )}
                                   {plan.status === "comparing" ? (
                                     <div className="flex gap-2">
+                                      <EditComparisonOptionDialog
+                                        option={option}
+                                        planId={plan.id}
+                                      />
                                       <form action={deleteComparisonOption}>
                                         <input
                                           type="hidden"
@@ -398,20 +463,47 @@ export default async function PlanningPage({
                               className={fieldClass}
                             />
                             <input
-                              name="product_price"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="ราคาต่อชิ้น"
-                              className={fieldClass}
-                            />
-                            <input
                               name="quantity"
                               type="number"
                               step="1"
                               min="1"
                               defaultValue="1"
-                              placeholder="จำนวน"
+                              placeholder="จำนวนสินค้า"
+                              className={fieldClass}
+                            />
+                            <span className="hidden sm:block" />
+                            <select
+                              name="product_price_basis"
+                              defaultValue="per_unit"
+                              aria-label="รูปแบบราคาสินค้า"
+                              className={fieldClass}
+                            >
+                              <option value="per_unit">
+                                ราคาสินค้า: แยกต่อชิ้น
+                              </option>
+                              <option value="total">
+                                ราคาสินค้า: รวมทั้งหมด
+                              </option>
+                            </select>
+                            <select
+                              name="installation_price_basis"
+                              defaultValue="total"
+                              aria-label="รูปแบบค่าติดตั้ง"
+                              className={fieldClass}
+                            >
+                              <option value="per_unit">
+                                ค่าติดตั้ง: แยกต่อชิ้น
+                              </option>
+                              <option value="total">
+                                ค่าติดตั้ง: รวมทั้งหมด
+                              </option>
+                            </select>
+                            <input
+                              name="product_price"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="ราคาสินค้า"
                               className={fieldClass}
                             />
                             <input
@@ -452,6 +544,7 @@ export default async function PlanningPage({
                         </Button>
                       ) : null}
                     </CardContent>
+                    </details>
                   </Card>
                 );
               })

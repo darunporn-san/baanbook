@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getHome } from "@/features/homes/queries";
+import { priceTotal, type PriceBasis } from "@/features/planning/pricing";
 import { addTimelineEvent } from "@/features/timeline/add-event";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,6 +58,15 @@ function quantity(formData: FormData) {
   return Number.isInteger(value) && value >= 1 ? value : 1;
 }
 
+function priceBasis(
+  formData: FormData,
+  key: string,
+  fallback: PriceBasis,
+): PriceBasis {
+  const value = String(formData.get(key) ?? "");
+  return value === "per_unit" || value === "total" ? value : fallback;
+}
+
 export async function createComparisonPlan(formData: FormData) {
   const homeId = String(formData.get("home_id") ?? "");
   const home = await getHome(homeId);
@@ -82,6 +92,51 @@ export async function createComparisonPlan(formData: FormData) {
 
   revalidatePath("/planning");
   redirect(path(home.id));
+}
+
+export async function updateComparisonPlan(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const homeId = String(formData.get("home_id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const destinationType = String(formData.get("destination_type") ?? "");
+  if (
+    !id ||
+    !homeId ||
+    !title ||
+    !["shopping", "maintenance", "renovation"].includes(destinationType)
+  ) {
+    redirect(path(homeId));
+  }
+
+  const supabase = await createClient();
+  const roomId = String(formData.get("room_id") ?? "");
+  if (roomId) {
+    const { data: room } = await supabase
+      .from("rooms")
+      .select("id")
+      .eq("id", roomId)
+      .eq("home_id", homeId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (!room) redirect(path(homeId));
+  }
+
+  const { error } = await supabase
+    .from("comparison_plans")
+    .update({
+      title,
+      room_id: roomId || null,
+      destination_type: destinationType,
+      notes: String(formData.get("notes") ?? "").trim() || null,
+    })
+    .eq("id", id)
+    .eq("home_id", homeId)
+    .eq("status", "comparing")
+    .is("deleted_at", null);
+  if (error) redirect(insertErrorPath(homeId, error.code));
+
+  revalidatePath("/planning");
+  redirect(path(homeId));
 }
 
 export async function createComparisonOption(formData: FormData) {
@@ -110,12 +165,72 @@ export async function createComparisonOption(formData: FormData) {
     provider_name: providerName,
     item_name: String(formData.get("item_name") ?? "").trim() || null,
     product_price_minor: money(formData, "product_price"),
+    product_price_basis: priceBasis(
+      formData,
+      "product_price_basis",
+      "per_unit",
+    ),
     quantity: quantity(formData),
     installation_price_minor: money(formData, "installation_price"),
+    installation_price_basis: priceBasis(
+      formData,
+      "installation_price_basis",
+      "total",
+    ),
     currency: home.default_currency,
     product_url: String(formData.get("product_url") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
   });
+  if (error) redirect(insertErrorPath(homeId, error.code));
+
+  revalidatePath("/planning");
+  redirect(path(homeId));
+}
+
+export async function updateComparisonOption(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const homeId = String(formData.get("home_id") ?? "");
+  const planId = String(formData.get("comparison_plan_id") ?? "");
+  const providerName = String(formData.get("provider_name") ?? "").trim();
+  if (!id || !homeId || !planId || !providerName) redirect(path(homeId));
+
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("comparison_plans")
+    .select("id")
+    .eq("id", planId)
+    .eq("home_id", homeId)
+    .eq("status", "comparing")
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!plan) redirect(path(homeId));
+
+  const { error } = await supabase
+    .from("comparison_options")
+    .update({
+      provider_name: providerName,
+      item_name: String(formData.get("item_name") ?? "").trim() || null,
+      product_price_minor: money(formData, "product_price"),
+      product_price_basis: priceBasis(
+        formData,
+        "product_price_basis",
+        "per_unit",
+      ),
+      quantity: quantity(formData),
+      installation_price_minor: money(formData, "installation_price"),
+      installation_price_basis: priceBasis(
+        formData,
+        "installation_price_basis",
+        "total",
+      ),
+      product_url: String(formData.get("product_url") ?? "").trim() || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
+    })
+    .eq("id", id)
+    .eq("comparison_plan_id", plan.id)
+    .eq("home_id", homeId)
+    .eq("is_selected", false)
+    .is("deleted_at", null);
   if (error) redirect(insertErrorPath(homeId, error.code));
 
   revalidatePath("/planning");
@@ -140,7 +255,7 @@ export async function confirmComparisonOption(formData: FormData) {
     supabase
       .from("comparison_options")
       .select(
-        "id,comparison_plan_id,provider_name,item_name,product_price_minor,quantity,installation_price_minor,product_url,notes",
+        "id,comparison_plan_id,provider_name,item_name,product_price_minor,product_price_basis,quantity,installation_price_minor,installation_price_basis,product_url,notes",
       )
       .eq("id", optionId)
       .eq("comparison_plan_id", planId)
@@ -149,9 +264,17 @@ export async function confirmComparisonOption(formData: FormData) {
   ]);
   if (!plan || !option || plan.status !== "comparing") redirect(path(homeId));
 
-  const total =
-    option.product_price_minor * option.quantity +
-    option.installation_price_minor;
+  const productTotal = priceTotal(
+    option.product_price_minor,
+    option.quantity,
+    option.product_price_basis,
+  );
+  const installationTotal = priceTotal(
+    option.installation_price_minor,
+    option.quantity,
+    option.installation_price_basis,
+  );
+  const total = productTotal + installationTotal;
   const detail = [`เลือกจาก ${option.provider_name}`, option.notes, plan.notes]
     .filter(Boolean)
     .join(" · ");

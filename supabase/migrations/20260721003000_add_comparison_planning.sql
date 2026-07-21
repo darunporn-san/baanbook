@@ -27,8 +27,10 @@ create table if not exists public.comparison_options (
   provider_name text not null,
   item_name text,
   product_price_minor integer not null default 0,
+  product_price_basis text not null default 'per_unit',
   quantity integer not null default 1,
   installation_price_minor integer not null default 0,
+  installation_price_basis text not null default 'total',
   currency text not null default 'THB',
   product_url text,
   notes text,
@@ -37,8 +39,14 @@ create table if not exists public.comparison_options (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
   constraint comparison_options_product_price_check check (product_price_minor >= 0),
+  constraint comparison_options_product_basis_check check (
+    product_price_basis in ('per_unit', 'total')
+  ),
   constraint comparison_options_quantity_check check (quantity >= 1),
-  constraint comparison_options_installation_price_check check (installation_price_minor >= 0)
+  constraint comparison_options_installation_price_check check (installation_price_minor >= 0),
+  constraint comparison_options_installation_basis_check check (
+    installation_price_basis in ('per_unit', 'total')
+  )
 );
 
 alter table public.comparison_plans

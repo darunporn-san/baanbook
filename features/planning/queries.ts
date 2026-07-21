@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import type { PriceBasis } from "@/features/planning/pricing";
 
 export type ComparisonOption = {
   id: string;
@@ -8,8 +9,10 @@ export type ComparisonOption = {
   provider_name: string;
   item_name: string | null;
   product_price_minor: number;
+  product_price_basis: PriceBasis;
   quantity: number;
   installation_price_minor: number;
+  installation_price_basis: PriceBasis;
   currency: string;
   product_url: string | null;
   notes: string | null;
@@ -50,7 +53,7 @@ export async function listComparisonPlans(
   const { data: options } = await supabase
     .from("comparison_options")
     .select(
-      "id,comparison_plan_id,home_id,provider_name,item_name,product_price_minor,quantity,installation_price_minor,currency,product_url,notes,is_selected",
+      "id,comparison_plan_id,home_id,provider_name,item_name,product_price_minor,product_price_basis,quantity,installation_price_minor,installation_price_basis,currency,product_url,notes,is_selected",
     )
     .in(
       "comparison_plan_id",

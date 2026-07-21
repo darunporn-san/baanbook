@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getHome } from "@/features/homes/queries";
-import { addTimelineEvent } from "@/features/timeline/actions";
+import { addTimelineEvent } from "@/features/timeline/add-event";
 import { createClient } from "@/lib/supabase/server";
 
 function expensesPath(homeId: string) {
@@ -194,25 +194,30 @@ export async function updateApplianceExpense(formData: FormData) {
   const applianceId = String(formData.get("appliance_id") ?? "");
   const homeId = String(formData.get("home_id") ?? "");
   const roomId = String(formData.get("room_id") ?? "") || null;
+  const title = String(formData.get("title") ?? "").trim();
+  const amount = Number(String(formData.get("amount") ?? "0"));
+  const expenseDate =
+    String(formData.get("expense_date") ?? "") ||
+    new Date().toISOString().slice(0, 10);
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const appointmentDate =
+    String(formData.get("appointment_date") ?? "") || null;
+  const appointmentTime =
+    String(formData.get("appointment_time") ?? "").trim() || null;
+  if (!title || !Number.isFinite(amount)) redirect(expensesPath(homeId));
+
   const supabase = await createClient();
 
   if (expenseId) {
-    const title = String(formData.get("title") ?? "").trim();
-    const amount = Number(String(formData.get("amount") ?? "0"));
-    if (!title || !Number.isFinite(amount)) redirect(expensesPath(homeId));
-
     const expenseUpdate = {
       title,
       room_id: roomId,
       category: "appliance",
       amount_minor: Math.round(amount * 100),
-      expense_date:
-        String(formData.get("expense_date") ?? "") ||
-        new Date().toISOString().slice(0, 10),
-      notes: String(formData.get("notes") ?? "").trim() || null,
-      appointment_date: String(formData.get("appointment_date") ?? "") || null,
-      appointment_time:
-        String(formData.get("appointment_time") ?? "").trim() || null,
+      expense_date: expenseDate,
+      notes,
+      appointment_date: appointmentDate,
+      appointment_time: appointmentTime,
     };
     const { error } = await supabase
       .from("expenses")
@@ -235,8 +240,39 @@ export async function updateApplianceExpense(formData: FormData) {
           ...(error.message.includes("notes")
             ? {}
             : { notes: expenseUpdate.notes }),
-        })
-        .eq("id", expenseId);
+      })
+      .eq("id", expenseId);
+    }
+  } else if (applianceId) {
+    const home = await getHome(homeId);
+    if (!home) redirect("/expenses");
+
+    const { data } = await supabase
+      .from("expenses")
+      .insert({
+        home_id: home.id,
+        room_id: roomId,
+        title,
+        category: "appliance",
+        amount_minor: Math.round(amount * 100),
+        currency: home.default_currency,
+        expense_date: expenseDate,
+        notes,
+        appointment_date: appointmentDate,
+        appointment_time: appointmentTime,
+      })
+      .select("id")
+      .single();
+
+    if (data) {
+      await addTimelineEvent(supabase, {
+        home_id: home.id,
+        room_id: roomId,
+        event_type: "expense_added",
+        title: `เพิ่มค่าใช้จ่าย: ${title}`,
+        source_type: "expense",
+        source_id: data.id,
+      });
     }
   }
 

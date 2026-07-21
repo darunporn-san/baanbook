@@ -1,25 +1,11 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+"use server";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function timelinePath(homeId: string) {
   return homeId ? `/timeline?homeId=${homeId}` : "/timeline";
-}
-
-export async function addTimelineEvent(
-  supabase: SupabaseClient,
-  event: {
-    home_id: string;
-    event_type: string;
-    title: string;
-    description?: string | null;
-    source_type?: string | null;
-    source_id?: string | null;
-    room_id?: string | null;
-  },
-) {
-  await supabase.from("timeline_events").insert(event);
 }
 
 export async function createTimelineEvent(formData: FormData) {

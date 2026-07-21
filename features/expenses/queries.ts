@@ -15,17 +15,22 @@ export type Expense = {
   appointment_time: string | null;
 };
 
-export async function listExpenses(homeId?: string): Promise<Expense[]> {
+export async function listExpenses(
+  homeId?: string,
+  limit = 50,
+): Promise<Expense[]> {
   if (!hasSupabaseEnv() || !homeId) return [];
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("expenses")
-    .select("id,home_id,room_id,title,category,amount_minor,currency,expense_date,notes,appointment_date,appointment_time")
+    .select(
+      "id,home_id,room_id,title,category,amount_minor,currency,expense_date,notes,appointment_date,appointment_time",
+    )
     .eq("home_id", homeId)
     .is("deleted_at", null)
     .order("expense_date", { ascending: false })
-    .limit(50);
+    .limit(limit);
 
   if (
     error?.message.includes("notes") ||
@@ -34,11 +39,13 @@ export async function listExpenses(homeId?: string): Promise<Expense[]> {
   ) {
     const { data: fallbackData, error: fallbackError } = await supabase
       .from("expenses")
-      .select("id,home_id,room_id,title,category,amount_minor,currency,expense_date")
+      .select(
+        "id,home_id,room_id,title,category,amount_minor,currency,expense_date",
+      )
       .eq("home_id", homeId)
       .is("deleted_at", null)
       .order("expense_date", { ascending: false })
-      .limit(50);
+      .limit(limit);
 
     if (fallbackError) return [];
 

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getHome } from "@/features/homes/queries";
-import { addTimelineEvent } from "@/features/timeline/actions";
+import { addTimelineEvent } from "@/features/timeline/add-event";
 import { createClient } from "@/lib/supabase/server";
 
 function appliancesPath(homeId: string) {

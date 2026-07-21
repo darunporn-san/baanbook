@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -25,7 +26,11 @@ import { formatMoney } from "@/lib/format";
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ homeId?: string }>;
+  searchParams?: Promise<{
+    homeId?: string;
+    view?: "general" | "appliance";
+    page?: string;
+  }>;
 }) {
   const homes = await listHomes();
   const params = await searchParams;
@@ -87,32 +92,52 @@ export default async function ExpensesPage({
       .filter((item) => !matchedApplianceIds.has(item.id))
       .map((appliance) => ({ expense: null, appliance })),
   ];
+  const activeView = params?.view === "appliance" ? "appliance" : "general";
+  const pageSize = 6;
+  const itemCount =
+    activeView === "general" ? normalExpenses.length : applianceItems.length;
+  const totalPages = Math.max(1, Math.ceil(itemCount / pageSize));
+  const requestedPage = Number.parseInt(params?.page ?? "1", 10) || 1;
+  const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const visibleNormalExpenses = normalExpenses.slice(
+    pageStart,
+    pageStart + pageSize,
+  );
+  const visibleApplianceItems = applianceItems.slice(
+    pageStart,
+    pageStart + pageSize,
+  );
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <section className="grid min-w-0 gap-4">
-        <div className="grid gap-3 rounded-lg bg-white p-4 shadow-sm lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
-          <div className="rounded-lg bg-[#00bfa5] p-5 text-white">
-            <h1 className="text-2xl font-semibold">ค่าใช้จ่าย</h1>
-            <p className="mt-1 text-sm text-white/80">
-              รวมค่าใช้จ่าย {formatMoney(total, home?.default_currency)}
-            </p>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-              <div className="rounded-md bg-white/15 p-3">
-                <p className="text-white/70">ทั่วไป</p>
-                <p className="text-lg font-semibold">{normalExpenses.length}</p>
-              </div>
-              <div className="rounded-md bg-white/15 p-3">
-                <p className="text-white/70">เครื่องใช้ไฟฟ้า</p>
-                <p className="text-lg font-semibold">{applianceItems.length}</p>
-              </div>
-              <div className="rounded-md bg-white/15 p-3">
-                <p className="text-white/70">ประกัน</p>
-                <p className="text-lg font-semibold">{activeWarranties}</p>
-              </div>
-            </div>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <section className="rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6">
+        <p className="text-sm font-medium text-white/70">การเงินของบ้าน</p>
+        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">ค่าใช้จ่าย</h1>
+        <p className="mt-2 text-sm text-white/80">
+          รวมค่าใช้จ่าย {formatMoney(total, home?.default_currency)}
+        </p>
+        <div className="mt-4 grid grid-cols-3 gap-2 text-sm sm:max-w-xl">
+          <div className="rounded-md bg-white/15 p-3">
+            <p className="text-white/70">ทั่วไป</p>
+            <p className="text-lg font-semibold">{normalExpenses.length}</p>
           </div>
-          <form action="/expenses" className="grid content-between gap-3">
+          <div className="rounded-md bg-white/15 p-3">
+            <p className="text-white/70">เครื่องใช้ไฟฟ้า</p>
+            <p className="text-lg font-semibold">{applianceItems.length}</p>
+          </div>
+          <div className="rounded-md bg-white/15 p-3">
+            <p className="text-white/70">ประกัน</p>
+            <p className="text-lg font-semibold">{activeWarranties}</p>
+          </div>
+        </div>
+      </section>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="grid min-w-0 gap-4">
+          <form
+            action="/expenses"
+            className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between"
+          >
             <div className="space-y-2">
               <label htmlFor="expenses-home" className="text-sm font-medium">
                 บ้านของค่าใช้จ่าย
@@ -121,7 +146,7 @@ export default async function ExpensesPage({
                 id="expenses-home"
                 name="homeId"
                 defaultValue={home?.id}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-10 w-full min-w-64 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {homes.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -132,60 +157,68 @@ export default async function ExpensesPage({
             </div>
             <Button type="submit">ดูข้อมูล</Button>
           </form>
-        </div>
-        <Card className="border-0 bg-white shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">
-              รายการค่าใช้จ่ายทั่วไป ({normalExpenses.length})
-            </CardTitle>
-            <CardDescription>
-              {normalExpenses.length
-                ? "เพิ่ม แก้ไข และลบค่าใช้จ่ายทั่วไปของบ้าน"
-                : "ยังไม่มีค่าใช้จ่ายทั่วไป"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid max-h-[520px] gap-3 overflow-y-auto pr-3">
-            {normalExpenses.length ? (
-              normalExpenses.map((expense) => (
-                <Card key={expense.id} className="border shadow-sm">
-                  <CardContent className="p-0">
-                    <ExpenseRow
-                      expense={expense}
-                      rooms={rooms}
-                      appointmentDone={isAppointmentDone(expense, now)}
-                      updateAction={updateExpense}
-                      deleteAction={deleteExpense}
-                    />
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="rounded-md border border-dashed bg-secondary/40 p-4">
-                <p className="text-sm font-semibold">
-                  ยังไม่มีค่าใช้จ่ายทั่วไป
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  เพิ่มค่าใช้จ่ายรายการแรกของบ้าน
-                </p>
+          <Card className="border-0 bg-white shadow-sm">
+            <CardHeader className="gap-4 pb-4">
+              <div>
+                <CardTitle className="text-base">รายการค่าใช้จ่าย</CardTitle>
+                <CardDescription>
+                  แสดงครั้งละ {pageSize} รายการเพื่อให้ค้นหาและเลื่อนได้ง่าย
+                </CardDescription>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-white shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">
-              เครื่องใช้ไฟฟ้าและประกัน ({applianceItems.length})
-            </CardTitle>
-            <CardDescription>
-              จัดการเครื่องใช้ไฟฟ้า วันที่ซื้อ
-              และวันหมดประกันในหน้าเดียวกับค่าใช้จ่าย
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid max-h-[520px] gap-3 overflow-y-auto pr-3">
-            {applianceItems.length ? (
-              <div className="grid gap-3">
-                {applianceItems.map(({ expense, appliance }) => (
+              <div className="grid grid-cols-2 rounded-lg bg-secondary p-1">
+                <Link
+                  href={{
+                    pathname: "/expenses",
+                    query: { homeId: home?.id, view: "general" },
+                  }}
+                  className={
+                    activeView === "general"
+                      ? "rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-primary shadow-sm"
+                      : "rounded-md px-3 py-2 text-center text-sm text-muted-foreground hover:text-foreground"
+                  }
+                  aria-current={activeView === "general" ? "page" : undefined}
+                >
+                  ทั่วไป ({normalExpenses.length})
+                </Link>
+                <Link
+                  href={{
+                    pathname: "/expenses",
+                    query: { homeId: home?.id, view: "appliance" },
+                  }}
+                  className={
+                    activeView === "appliance"
+                      ? "rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-primary shadow-sm"
+                      : "rounded-md px-3 py-2 text-center text-sm text-muted-foreground hover:text-foreground"
+                  }
+                  aria-current={activeView === "appliance" ? "page" : undefined}
+                >
+                  เครื่องใช้ไฟฟ้า ({applianceItems.length})
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {activeView === "general" ? (
+                visibleNormalExpenses.length ? (
+                  visibleNormalExpenses.map((expense) => (
+                    <Card key={expense.id} className="border shadow-sm">
+                      <CardContent className="p-0">
+                        <ExpenseRow
+                          expense={expense}
+                          rooms={rooms}
+                          appointmentDone={isAppointmentDone(expense, now)}
+                          updateAction={updateExpense}
+                          deleteAction={deleteExpense}
+                        />
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="rounded-md border border-dashed bg-secondary/40 p-4 text-sm text-muted-foreground">
+                    ยังไม่มีค่าใช้จ่ายทั่วไป
+                  </div>
+                )
+              ) : visibleApplianceItems.length ? (
+                visibleApplianceItems.map(({ expense, appliance }) => (
                   <Card
                     key={expense?.id ?? appliance?.id}
                     className="border shadow-sm"
@@ -203,40 +236,86 @@ export default async function ExpensesPage({
                       />
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            ) : null}
+                ))
+              ) : (
+                <div className="rounded-md border border-dashed bg-secondary/40 p-4 text-sm text-muted-foreground">
+                  ยังไม่มีเครื่องใช้ไฟฟ้าและประกัน
+                </div>
+              )}
 
-            {!applianceItems.length ? (
-              <div className="rounded-md border border-dashed bg-secondary/40 p-4">
-                <p className="text-sm font-semibold">ยังไม่มีเครื่องใช้ไฟฟ้า</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  ติ๊กบันทึกเป็นเครื่องใช้ไฟฟ้าในฟอร์มเพิ่มรายการด้านขวา
+              {totalPages > 1 ? (
+                <nav
+                  className="mt-2 flex items-center justify-between border-t pt-4"
+                  aria-label="แบ่งหน้ารายการค่าใช้จ่าย"
+                >
+                  {currentPage > 1 ? (
+                    <Button asChild variant="outline" size="sm">
+                      <Link
+                        href={{
+                          pathname: "/expenses",
+                          query: {
+                            homeId: home?.id,
+                            view: activeView,
+                            page: currentPage - 1,
+                          },
+                        }}
+                      >
+                        ก่อนหน้า
+                      </Link>
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    หน้า {currentPage} / {totalPages}
+                  </span>
+                  {currentPage < totalPages ? (
+                    <Button asChild variant="outline" size="sm">
+                      <Link
+                        href={{
+                          pathname: "/expenses",
+                          query: {
+                            homeId: home?.id,
+                            view: activeView,
+                            page: currentPage + 1,
+                          },
+                        }}
+                      >
+                        ถัดไป
+                      </Link>
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                </nav>
+              ) : null}
+            </CardContent>
+          </Card>
+        </section>
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <Card className="border-0 bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">เพิ่มรายการ</CardTitle>
+              <CardDescription>
+                บันทึกค่าใช้จ่าย และเพิ่มเครื่องใช้ไฟฟ้า/ประกันได้ในฟอร์มเดียว
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="max-h-[calc(100vh-140px)] overflow-y-auto pr-3">
+              {home ? (
+                <CreateExpenseForm
+                  homeId={home.id}
+                  homes={homes}
+                  rooms={rooms}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  สร้างบ้านก่อนเพิ่มค่าใช้จ่าย
                 </p>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      </section>
-      <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
-        <Card className="border-0 bg-white shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">เพิ่มรายการ</CardTitle>
-            <CardDescription>
-              บันทึกค่าใช้จ่าย และเพิ่มเครื่องใช้ไฟฟ้า/ประกันได้ในฟอร์มเดียว
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="max-h-[calc(100vh-140px)] overflow-y-auto pr-3">
-            {home ? (
-              <CreateExpenseForm homeId={home.id} homes={homes} rooms={rooms} />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                สร้างบ้านก่อนเพิ่มค่าใช้จ่าย
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </aside>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
     </div>
   );
 }

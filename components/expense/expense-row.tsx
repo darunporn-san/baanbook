@@ -35,14 +35,32 @@ export function ExpenseRow({
     .filter(Boolean)
     .join(" ");
 
-  if (editing) {
-    return (
-      <form action={updateAction} className="grid gap-5 p-5">
+  const editModal = editing ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/50"
+        onClick={() => setEditing(false)}
+        aria-label="ปิดฟอร์มแก้ไข"
+      />
+      <form
+        action={updateAction}
+        className="relative z-10 grid max-h-[calc(100vh-1.5rem)] w-full max-w-5xl gap-5 overflow-y-auto overscroll-contain rounded-lg bg-white p-5 shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`edit-expense-title-${expense.id}`}
+        onKeyDown={(event) => event.key === "Escape" && setEditing(false)}
+      >
         <input type="hidden" name="id" value={expense.id} />
         <input type="hidden" name="home_id" value={expense.home_id} />
-        <div className="flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="sticky -top-5 z-10 flex flex-col gap-2 border-b bg-white pb-4 pt-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-semibold">แก้ไขค่าใช้จ่าย</p>
+            <p
+              id={`edit-expense-title-${expense.id}`}
+              className="text-sm font-semibold"
+            >
+              แก้ไขค่าใช้จ่าย
+            </p>
             <p className="text-xs text-muted-foreground">
               ปรับรายละเอียด หมวด วันที่ และห้องที่เกี่ยวข้อง
             </p>
@@ -158,7 +176,7 @@ export function ExpenseRow({
           />
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="sticky -bottom-5 flex justify-end gap-2 border-t bg-white py-4">
           <Button
             type="button"
             variant="ghost"
@@ -170,63 +188,66 @@ export function ExpenseRow({
           <Button size="sm">{commonText.save}</Button>
         </div>
       </form>
-    );
-  }
+    </div>
+  ) : null;
 
   return (
-    <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-      <div className="grid gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary">
-            {getExpenseCategoryLabel(expense.category)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {formatDate(expense.expense_date)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {roomName ?? commonText.noRoom}
-          </span>
-          {appointmentText ? (
-            appointmentDone ? (
-              <span className="rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary">
-                Done
-              </span>
-            ) : (
-              <span className="rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]">
-                นัดหมาย {appointmentText}
-              </span>
-            )
-          ) : null}
-        </div>
-        <div>
-          <p className="text-base font-semibold">{expense.title}</p>
-          <p className="mt-1 text-xl font-semibold text-primary">
-            {formatMoney(expense.amount_minor, expense.currency)}
-          </p>
-          {expense.notes ? (
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {expense.notes}
+    <>
+      <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+        <div className="grid gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary">
+              {getExpenseCategoryLabel(expense.category)}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {formatDate(expense.expense_date)}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {roomName ?? commonText.noRoom}
+            </span>
+            {appointmentText ? (
+              appointmentDone ? (
+                <span className="rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary">
+                  Done
+                </span>
+              ) : (
+                <span className="rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]">
+                  นัดหมาย {appointmentText}
+                </span>
+              )
+            ) : null}
+          </div>
+          <div>
+            <p className="text-base font-semibold">{expense.title}</p>
+            <p className="mt-1 text-xl font-semibold text-primary">
+              {formatMoney(expense.amount_minor, expense.currency)}
             </p>
-          ) : null}
+            {expense.notes ? (
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                {expense.notes}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setEditing(true)}
+          >
+            {commonText.edit}
+          </Button>
+          <form action={deleteAction}>
+            <input type="hidden" name="id" value={expense.id} />
+            <input type="hidden" name="home_id" value={expense.home_id} />
+            <Button variant="ghost" size="sm">
+              {commonText.delete}
+            </Button>
+          </form>
         </div>
       </div>
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setEditing(true)}
-        >
-          {commonText.edit}
-        </Button>
-        <form action={deleteAction}>
-          <input type="hidden" name="id" value={expense.id} />
-          <input type="hidden" name="home_id" value={expense.home_id} />
-          <Button variant="ghost" size="sm">
-            {commonText.delete}
-          </Button>
-        </form>
-      </div>
-    </div>
+      {editModal}
+    </>
   );
 }

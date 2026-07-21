@@ -65,6 +65,10 @@ export const openingTypeLabels: Record<string, string> = {
 
 export const timelineEventLabels: Record<string, string> = {
   manual: "บันทึกเอง",
+  purchase: "วันที่ซื้อ",
+  appointment: "นัดหมาย",
+  warranty_end: "หมดประกัน",
+  maintenance_due: "กำหนดซ่อม",
   room_added: "เพิ่มห้อง",
   expense_added: "เพิ่มค่าใช้จ่าย",
   appliance_added: "เพิ่มเครื่องใช้ไฟฟ้า",
@@ -88,7 +92,10 @@ export function formatTimelineTitle(title: string) {
     .replace(/^Mortgage added: /, "เพิ่มสินเชื่อบ้าน: ");
 }
 
-export function getLabel(labels: Record<string, string>, value: string | null | undefined) {
+export function getLabel(
+  labels: Record<string, string>,
+  value: string | null | undefined,
+) {
   if (!value) return "";
   return labels[value] ?? value;
 }

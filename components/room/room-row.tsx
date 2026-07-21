@@ -292,7 +292,8 @@ export function RoomRow({
           </div>
         </div>
       </details>
-      <details name="room-actions"   className="absolute right-3 top-1/2 z-30 -translate-y-1/2">
+      <details name="room-actions"   className="absolute right-3 top-6 z-30"
+>
         <summary
           className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md border bg-white text-muted-foreground shadow-sm hover:bg-secondary hover:text-foreground [&::-webkit-details-marker]:hidden"
           aria-label={`เมนูจัดการ ${room.name}`}

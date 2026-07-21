@@ -36,6 +36,15 @@ export function ApplianceRow({
           {rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}
         </select>
         <input name="purchase_date" type="date" defaultValue={item.purchase_date ?? ""} className="h-9 rounded-md border bg-background px-3 text-sm" />
+        <select
+          name="warranty_type"
+          defaultValue={item.warranty_lifetime ? "lifetime" : item.warranty_end_date ? "date" : "none"}
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+        >
+          <option value="none">ไม่มีประกัน</option>
+          <option value="date">ระบุวันหมดประกัน</option>
+          <option value="lifetime">ประกันตลอดชีพ</option>
+        </select>
         <input name="warranty_end_date" type="date" defaultValue={item.warranty_end_date ?? ""} className="h-9 rounded-md border bg-background px-3 text-sm" />
         <div className="flex gap-2">
           <Button size="sm">{commonText.save}</Button>
@@ -50,7 +59,7 @@ export function ApplianceRow({
       <div>
         <p className="font-medium">{item.name}</p>
         <p className="text-sm text-muted-foreground">
-          {[item.brand, item.model, item.warranty_end_date ? `ประกันถึง ${formatDate(item.warranty_end_date)}` : null].filter(Boolean).join(" · ") || commonText.noDetails}
+          {[item.brand, item.model, item.warranty_lifetime ? "ประกันตลอดชีพ" : item.warranty_end_date ? `ประกันถึง ${formatDate(item.warranty_end_date)}` : null].filter(Boolean).join(" · ") || commonText.noDetails}
         </p>
       </div>
       <div className="flex gap-2">

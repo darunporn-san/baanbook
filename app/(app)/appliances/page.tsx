@@ -75,7 +75,9 @@ export default async function AppliancesPage({
                       {[
                         item.brand,
                         item.model,
-                        item.warranty_end_date
+                        item.warranty_lifetime
+                          ? "ประกันตลอดชีพ"
+                          : item.warranty_end_date
                           ? `ประกันถึง ${formatDate(item.warranty_end_date)}`
                           : null,
                       ]

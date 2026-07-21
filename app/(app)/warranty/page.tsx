@@ -9,12 +9,7 @@ import {
 import { listAppliances } from "@/features/appliances/queries";
 import { listHomes } from "@/features/homes/queries";
 import { formatDate } from "@/lib/format";
-
-function daysUntil(date: string) {
-  const today = new Date();
-  const end = new Date(`${date}T00:00:00`);
-  return Math.ceil((end.getTime() - today.getTime()) / 86_400_000);
-}
+import { getWarrantyDaysLeft } from "@/lib/warranty";
 
 export default async function WarrantyPage({
   searchParams,
@@ -25,17 +20,24 @@ export default async function WarrantyPage({
   const params = await searchParams;
   const home = homes.find((item) => item.id === params?.homeId) ?? homes[0];
   const appliances = (await listAppliances(home?.id)).filter(
-    (item) => item.warranty_end_date,
+    (item) => item.warranty_end_date || item.warranty_lifetime,
   );
   const warranties = appliances.map((item) => ({
     ...item,
-    daysLeft: daysUntil(item.warranty_end_date ?? ""),
+    daysLeft: item.warranty_lifetime
+      ? null
+      : getWarrantyDaysLeft(item.warranty_end_date ?? ""),
   }));
   const expiringSoon = warranties.filter(
-    (item) => item.daysLeft >= 0 && item.daysLeft <= 30,
+    (item) =>
+      item.daysLeft !== null && item.daysLeft >= 0 && item.daysLeft <= 30,
   );
-  const expired = warranties.filter((item) => item.daysLeft < 0);
-  const active = warranties.filter((item) => item.daysLeft > 30);
+  const expired = warranties.filter(
+    (item) => item.daysLeft !== null && item.daysLeft < 0,
+  );
+  const active = warranties.filter(
+    (item) => item.daysLeft === null || item.daysLeft > 30,
+  );
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -72,7 +74,9 @@ export default async function WarrantyPage({
                       {[
                         item.brand,
                         item.model,
-                        `หมดอายุ ${formatDate(item.warranty_end_date)}`,
+                        item.warranty_lifetime
+                          ? "ประกันตลอดชีพ"
+                          : `หมดอายุ ${formatDate(item.warranty_end_date)}`,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
@@ -80,14 +84,18 @@ export default async function WarrantyPage({
                   </div>
                   <span
                     className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${
-                      item.daysLeft < 0
+                      item.daysLeft === null
+                        ? "bg-[#e8f5f3] text-primary"
+                        : item.daysLeft < 0
                         ? "bg-[#fff0ed] text-[#b84e40]"
                         : item.daysLeft <= 30
                           ? "bg-[#fff5d8] text-[#705b2f]"
                           : "bg-[#e8f5f3] text-primary"
                     }`}
                   >
-                    {item.daysLeft < 0
+                    {item.daysLeft === null
+                      ? "ตลอดชีพ"
+                      : item.daysLeft < 0
                       ? `หมดอายุแล้ว ${Math.abs(item.daysLeft)} วัน`
                       : `เหลือ ${item.daysLeft} วัน`}
                   </span>

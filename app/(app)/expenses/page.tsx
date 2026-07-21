@@ -55,7 +55,7 @@ export default async function ExpensesPage({
     0,
   );
   const activeWarranties = appliances.filter(
-    (item) => item.warranty_end_date,
+    (item) => item.warranty_end_date || item.warranty_lifetime,
   ).length;
   const now = new Date();
   const sortedExpenses = [...expenses].sort((a, b) => {

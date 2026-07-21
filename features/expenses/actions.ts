@@ -38,8 +38,12 @@ export async function createExpense(formData: FormData) {
   const model = String(formData.get("model") ?? "").trim() || null;
   const purchaseDate =
     String(formData.get("purchase_date") ?? "") || expenseDate;
+  const warrantyType = String(formData.get("warranty_type") ?? "none");
+  const warrantyLifetime = warrantyType === "lifetime";
   const warrantyEndDate =
-    String(formData.get("warranty_end_date") ?? "") || null;
+    warrantyType === "date"
+      ? String(formData.get("warranty_end_date") ?? "") || null
+      : null;
   const amountMinor = Math.round(amount * 100);
   const supabase = await createClient();
   const { data: room } = rawRoomId
@@ -115,6 +119,7 @@ export async function createExpense(formData: FormData) {
           model,
           purchase_date: purchaseDate,
           warranty_end_date: warrantyEndDate,
+          warranty_lifetime: warrantyLifetime,
         })
         .select("id")
         .single();
@@ -210,6 +215,12 @@ export async function updateApplianceExpense(formData: FormData) {
   const appointmentTime =
     String(formData.get("appointment_time") ?? "").trim() || null;
   const isPaid = String(formData.get("is_paid") ?? "true") !== "false";
+  const warrantyType = String(formData.get("warranty_type") ?? "none");
+  const warrantyLifetime = warrantyType === "lifetime";
+  const warrantyEndDate =
+    warrantyType === "date"
+      ? String(formData.get("warranty_end_date") ?? "") || null
+      : null;
   if (!title || !Number.isFinite(amount)) redirect(expensesPath(homeId));
 
   const supabase = await createClient();
@@ -299,8 +310,8 @@ export async function updateApplianceExpense(formData: FormData) {
         brand: String(formData.get("brand") ?? "").trim() || null,
         model: String(formData.get("model") ?? "").trim() || null,
         purchase_date: String(formData.get("purchase_date") ?? "") || null,
-        warranty_end_date:
-          String(formData.get("warranty_end_date") ?? "") || null,
+        warranty_end_date: warrantyEndDate,
+        warranty_lifetime: warrantyLifetime,
       })
       .eq("id", applianceId);
   }

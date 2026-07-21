@@ -50,10 +50,23 @@ export function CreateApplianceForm({
           </option>
         ))}
       </select>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="appliance-purchase-date">วันที่ซื้อ</Label>
           <Input id="appliance-purchase-date" name="purchase_date" type="date" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="appliance-warranty-type">รูปแบบประกัน</Label>
+          <select
+            id="appliance-warranty-type"
+            name="warranty_type"
+            defaultValue="none"
+            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="none">ไม่มีประกัน</option>
+            <option value="date">ระบุวันหมดประกัน</option>
+            <option value="lifetime">ประกันตลอดชีพ</option>
+          </select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="appliance-warranty-end-date">วันหมดประกัน</Label>

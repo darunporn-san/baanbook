@@ -10,6 +10,17 @@ import { formatDate, formatMoney } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getWarrantyDaysLeft } from "@/lib/warranty";
+
+function warrantyText(appliance?: Appliance) {
+  if (appliance?.warranty_lifetime) return "ประกันตลอดชีพ";
+  if (!appliance?.warranty_end_date) return null;
+
+  const days = getWarrantyDaysLeft(appliance.warranty_end_date);
+  return `ประกันถึง ${formatDate(appliance.warranty_end_date)} · ${
+    days < 0 ? `หมดแล้ว ${Math.abs(days)} วัน` : `เหลือ ${days} วัน`
+  }`;
+}
 
 export function ApplianceExpenseCard({
   expense,
@@ -233,7 +244,30 @@ export function ApplianceExpenseCard({
               }
             />
           </div>
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-2">
+            <Label
+              htmlFor={`appliance-warranty-type-${appliance?.id ?? expense?.id}`}
+            >
+              รูปแบบประกัน
+            </Label>
+            <select
+              id={`appliance-warranty-type-${appliance?.id ?? expense?.id}`}
+              name="warranty_type"
+              defaultValue={
+                appliance?.warranty_lifetime
+                  ? "lifetime"
+                  : appliance?.warranty_end_date
+                    ? "date"
+                    : "none"
+              }
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="none">ไม่มีประกัน</option>
+              <option value="date">ระบุวันหมดประกัน</option>
+              <option value="lifetime">ประกันตลอดชีพ</option>
+            </select>
+          </div>
+          <div className="space-y-2">
             <Label
               htmlFor={`appliance-warranty-end-${appliance?.id ?? expense?.id}`}
             >
@@ -354,9 +388,7 @@ export function ApplianceExpenseCard({
                 {[
                   appliance.brand,
                   appliance.model,
-                  appliance.warranty_end_date
-                    ? `ประกันถึง ${formatDate(appliance.warranty_end_date)}`
-                    : null,
+                  warrantyText(appliance),
                 ]
                   .filter(Boolean)
                   .join(" · ") || commonText.noDetails}

@@ -26,7 +26,12 @@ export async function createAppliance(formData: FormData) {
   const brand = String(formData.get("brand") ?? "").trim() || null;
   const model = String(formData.get("model") ?? "").trim() || null;
   const purchaseDate = String(formData.get("purchase_date") ?? "") || null;
-  const warrantyEndDate = String(formData.get("warranty_end_date") ?? "") || null;
+  const warrantyType = String(formData.get("warranty_type") ?? "none");
+  const warrantyLifetime = warrantyType === "lifetime";
+  const warrantyEndDate =
+    warrantyType === "date"
+      ? String(formData.get("warranty_end_date") ?? "") || null
+      : null;
   const supabase = await createClient();
   const { data: room } = rawRoomId
     ? await supabase
@@ -48,6 +53,7 @@ export async function createAppliance(formData: FormData) {
       model,
       purchase_date: purchaseDate,
       warranty_end_date: warrantyEndDate,
+      warranty_lifetime: warrantyLifetime,
     })
     .select("id")
     .single();
@@ -77,6 +83,8 @@ export async function updateAppliance(formData: FormData) {
   if (!id || !name) redirect("/appliances");
 
   const supabase = await createClient();
+  const warrantyType = String(formData.get("warranty_type") ?? "none");
+  const warrantyLifetime = warrantyType === "lifetime";
   await supabase
     .from("appliances")
     .update({
@@ -85,7 +93,11 @@ export async function updateAppliance(formData: FormData) {
       brand: String(formData.get("brand") ?? "").trim() || null,
       model: String(formData.get("model") ?? "").trim() || null,
       purchase_date: String(formData.get("purchase_date") ?? "") || null,
-      warranty_end_date: String(formData.get("warranty_end_date") ?? "") || null,
+      warranty_end_date:
+        warrantyType === "date"
+          ? String(formData.get("warranty_end_date") ?? "") || null
+          : null,
+      warranty_lifetime: warrantyLifetime,
     })
     .eq("id", id);
 

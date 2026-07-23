@@ -23,6 +23,10 @@ import { listComparisonPlans } from "@/features/planning/queries";
 import { priceTotal } from "@/features/planning/pricing";
 import { listRooms } from "@/features/rooms/queries";
 import { formatMoney } from "@/lib/format";
+import {
+  MobileCreateTrigger,
+  ResponsiveCreatePanel,
+} from "@/components/ui/mobile-create-dialog";
 
 const destinationLabels = {
   shopping: "รายการซื้อ",
@@ -58,7 +62,7 @@ export default async function PlanningPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="grid gap-5 rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+      <section className="relative grid gap-5 rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/70">
             ตัดสินใจก่อนซื้อหรือจ้าง
@@ -71,13 +75,21 @@ export default async function PlanningPage({
             ก่อนยืนยันตัวเลือกที่เหมาะสม
           </p>
         </div>
-        <HeaderHomeSwitcher
-          action="/planning"
-          label="บ้านของแผน"
-          homes={homes}
-          homeId={home?.id}
-          hiddenFields={{ view: activeView }}
-        />
+        <div>
+          <HeaderHomeSwitcher
+            action="/planning"
+            label="บ้านของแผน"
+            homes={homes}
+            homeId={home?.id}
+            hiddenFields={{ view: activeView }}
+          />
+          {home ? (
+            <MobileCreateTrigger
+              dialogId="create-planning-dialog"
+              label="สร้างแผนเปรียบเทียบ"
+            />
+          ) : null}
+        </div>
       </section>
 
       {params?.error ? (
@@ -228,307 +240,309 @@ export default async function PlanningPage({
                         </div>
                       </summary>
                       <CardContent className="grid gap-3 p-4">
-                      {plan.options.length ? (
-                        <div className="grid items-start gap-3 xl:grid-cols-2">
-                          {plan.options.map((option) => {
-                            const productTotal =
-                              priceTotal(
+                        {plan.options.length ? (
+                          <div className="grid items-start gap-3 xl:grid-cols-2">
+                            {plan.options.map((option) => {
+                              const productTotal = priceTotal(
                                 option.product_price_minor,
                                 option.quantity,
                                 option.product_price_basis,
                               );
-                            const installationTotal = priceTotal(
-                              option.installation_price_minor,
-                              option.quantity,
-                              option.installation_price_basis,
-                            );
-                            const total = productTotal + installationTotal;
-                            const selected =
-                              plan.selected_option_id === option.id;
+                              const installationTotal = priceTotal(
+                                option.installation_price_minor,
+                                option.quantity,
+                                option.installation_price_basis,
+                              );
+                              const total = productTotal + installationTotal;
+                              const selected =
+                                plan.selected_option_id === option.id;
 
-                            return (
-                              <div
-                                key={option.id}
-                                className={`rounded-lg border p-4 ${
-                                  selected
-                                    ? "border-primary bg-[#f4faf9] ring-1 ring-primary"
-                                    : "bg-white"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <p className="truncate font-semibold">
-                                      {option.provider_name}
-                                    </p>
-                                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                                      {option.item_name || plan.title}
-                                    </p>
-                                  </div>
-                                  {selected ? (
-                                    <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
-                                  ) : lowestTotal === total ? (
-                                    <span className="shrink-0 rounded-full bg-[#e8f5f3] px-2 py-1 text-xs font-semibold text-primary">
-                                      ราคาต่ำสุด
-                                    </span>
-                                  ) : null}
-                                </div>
-
-                                <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-                                  <div className="rounded-md bg-secondary/60 p-2">
-                                    <p className="text-[11px] text-muted-foreground">
-                                      ราคาสินค้า
-                                      {option.product_price_basis === "per_unit"
-                                        ? "/ชิ้น"
-                                        : "รวม"}
-                                    </p>
-                                    <p className="mt-1 font-medium">
-                                      {formatMoney(
-                                        option.product_price_minor,
-                                        option.currency,
-                                      )}
-                                    </p>
-                                  </div>
-                                  <div className="rounded-md bg-secondary/60 p-2">
-                                    <p className="text-[11px] text-muted-foreground">
-                                      จำนวน
-                                    </p>
-                                    <p className="mt-1 font-medium">
-                                      {option.quantity.toLocaleString("th-TH")}{" "}
-                                      ชิ้น
-                                    </p>
-                                  </div>
-                                  <div className="rounded-md bg-secondary/60 p-2">
-                                    <p className="text-[11px] text-muted-foreground">
-                                      รวมสินค้า
-                                    </p>
-                                    <p className="mt-1 font-medium">
-                                      {formatMoney(
-                                        productTotal,
-                                        option.currency,
-                                      )}
-                                    </p>
-                                  </div>
-                                  <div className="rounded-md bg-secondary/60 p-2">
-                                    <p className="text-[11px] text-muted-foreground">
-                                      ค่าติดตั้ง
-                                      {option.installation_price_basis ===
-                                      "per_unit"
-                                        ? "/ชิ้น"
-                                        : "รวม"}
-                                    </p>
-                                    <p className="mt-1 font-medium">
-                                      {formatMoney(
-                                        option.installation_price_minor,
-                                        option.currency,
-                                      )}
-                                    </p>
-                                  </div>
-                                  <div className="rounded-md bg-secondary/60 p-2">
-                                    <p className="text-[11px] text-muted-foreground">
-                                      รวมติดตั้ง
-                                    </p>
-                                    <p className="mt-1 font-medium">
-                                      {formatMoney(
-                                        installationTotal,
-                                        option.currency,
-                                      )}
-                                    </p>
-                                  </div>
-                                  <div className="rounded-md bg-[#fff5d8] p-2 text-[#705b2f]">
-                                    <p className="text-[11px] opacity-75">
-                                      รวม
-                                    </p>
-                                    <p className="mt-1 font-semibold">
-                                      {formatMoney(total, option.currency)}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {option.notes ? (
-                                  <p className="mt-3 text-sm text-muted-foreground">
-                                    {option.notes}
-                                  </p>
-                                ) : null}
-
-                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-                                  {option.product_url ? (
-                                    <a
-                                      href={option.product_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex items-center gap-1 text-sm font-medium text-primary"
-                                    >
-                                      ดูรายละเอียด
-                                      <ExternalLink className="h-3.5 w-3.5" />
-                                    </a>
-                                  ) : (
-                                    <span />
-                                  )}
-                                  {plan.status === "comparing" ? (
-                                    <div className="flex gap-2">
-                                      <EditComparisonOptionDialog
-                                        option={option}
-                                        planId={plan.id}
-                                      />
-                                      <form action={deleteComparisonOption}>
-                                        <input
-                                          type="hidden"
-                                          name="id"
-                                          value={option.id}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="home_id"
-                                          value={plan.home_id}
-                                        />
-                                        <Button size="sm" variant="ghost">
-                                          ลบ
-                                        </Button>
-                                      </form>
-                                      <form action={confirmComparisonOption}>
-                                        <input
-                                          type="hidden"
-                                          name="home_id"
-                                          value={plan.home_id}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="comparison_plan_id"
-                                          value={plan.id}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="option_id"
-                                          value={option.id}
-                                        />
-                                        <Button size="sm">ยืนยันเลือก</Button>
-                                      </form>
+                              return (
+                                <div
+                                  key={option.id}
+                                  className={`rounded-lg border p-4 ${
+                                    selected
+                                      ? "border-primary bg-[#f4faf9] ring-1 ring-primary"
+                                      : "bg-white"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="truncate font-semibold">
+                                        {option.provider_name}
+                                      </p>
+                                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                                        {option.item_name || plan.title}
+                                      </p>
                                     </div>
-                                  ) : null}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                          ยังไม่มีตัวเลือก
-                          เพิ่มร้านหรือช่างอย่างน้อยหนึ่งรายเพื่อเริ่มเปรียบเทียบ
-                        </div>
-                      )}
+                                    {selected ? (
+                                      <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+                                    ) : lowestTotal === total ? (
+                                      <span className="shrink-0 rounded-full bg-[#e8f5f3] px-2 py-1 text-xs font-semibold text-primary">
+                                        ราคาต่ำสุด
+                                      </span>
+                                    ) : null}
+                                  </div>
 
-                      {plan.status === "comparing" ? (
-                        <details className="rounded-lg border bg-secondary/25 p-3">
-                          <summary className="cursor-pointer text-sm font-semibold text-primary">
-                            + เพิ่มร้าน / ช่าง / ตัวเลือก
-                          </summary>
-                          <form
-                            action={createComparisonOption}
-                            className="mt-4 grid gap-3 sm:grid-cols-2"
-                          >
-                            <input
-                              type="hidden"
-                              name="comparison_plan_id"
-                              value={plan.id}
-                            />
-                            <input
-                              type="hidden"
-                              name="home_id"
-                              value={plan.home_id}
-                            />
-                            <input
-                              name="provider_name"
-                              placeholder="ชื่อร้าน / ช่าง"
-                              required
-                              className={fieldClass}
-                            />
-                            <input
-                              name="item_name"
-                              placeholder="สินค้า / รายละเอียดข้อเสนอ"
-                              className={fieldClass}
-                            />
-                            <input
-                              name="quantity"
-                              type="number"
-                              step="1"
-                              min="1"
-                              defaultValue="1"
-                              placeholder="จำนวนสินค้า"
-                              className={fieldClass}
-                            />
-                            <span className="hidden sm:block" />
-                            <select
-                              name="product_price_basis"
-                              defaultValue="per_unit"
-                              aria-label="รูปแบบราคาสินค้า"
-                              className={fieldClass}
+                                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+                                    <div className="rounded-md bg-secondary/60 p-2">
+                                      <p className="text-[11px] text-muted-foreground">
+                                        ราคาสินค้า
+                                        {option.product_price_basis ===
+                                        "per_unit"
+                                          ? "/ชิ้น"
+                                          : "รวม"}
+                                      </p>
+                                      <p className="mt-1 font-medium">
+                                        {formatMoney(
+                                          option.product_price_minor,
+                                          option.currency,
+                                        )}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-md bg-secondary/60 p-2">
+                                      <p className="text-[11px] text-muted-foreground">
+                                        จำนวน
+                                      </p>
+                                      <p className="mt-1 font-medium">
+                                        {option.quantity.toLocaleString(
+                                          "th-TH",
+                                        )}{" "}
+                                        ชิ้น
+                                      </p>
+                                    </div>
+                                    <div className="rounded-md bg-secondary/60 p-2">
+                                      <p className="text-[11px] text-muted-foreground">
+                                        รวมสินค้า
+                                      </p>
+                                      <p className="mt-1 font-medium">
+                                        {formatMoney(
+                                          productTotal,
+                                          option.currency,
+                                        )}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-md bg-secondary/60 p-2">
+                                      <p className="text-[11px] text-muted-foreground">
+                                        ค่าติดตั้ง
+                                        {option.installation_price_basis ===
+                                        "per_unit"
+                                          ? "/ชิ้น"
+                                          : "รวม"}
+                                      </p>
+                                      <p className="mt-1 font-medium">
+                                        {formatMoney(
+                                          option.installation_price_minor,
+                                          option.currency,
+                                        )}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-md bg-secondary/60 p-2">
+                                      <p className="text-[11px] text-muted-foreground">
+                                        รวมติดตั้ง
+                                      </p>
+                                      <p className="mt-1 font-medium">
+                                        {formatMoney(
+                                          installationTotal,
+                                          option.currency,
+                                        )}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-md bg-[#fff5d8] p-2 text-[#705b2f]">
+                                      <p className="text-[11px] opacity-75">
+                                        รวม
+                                      </p>
+                                      <p className="mt-1 font-semibold">
+                                        {formatMoney(total, option.currency)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {option.notes ? (
+                                    <p className="mt-3 text-sm text-muted-foreground">
+                                      {option.notes}
+                                    </p>
+                                  ) : null}
+
+                                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+                                    {option.product_url ? (
+                                      <a
+                                        href={option.product_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm font-medium text-primary"
+                                      >
+                                        ดูรายละเอียด
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                      </a>
+                                    ) : (
+                                      <span />
+                                    )}
+                                    {plan.status === "comparing" ? (
+                                      <div className="flex gap-2">
+                                        <EditComparisonOptionDialog
+                                          option={option}
+                                          planId={plan.id}
+                                        />
+                                        <form action={deleteComparisonOption}>
+                                          <input
+                                            type="hidden"
+                                            name="id"
+                                            value={option.id}
+                                          />
+                                          <input
+                                            type="hidden"
+                                            name="home_id"
+                                            value={plan.home_id}
+                                          />
+                                          <Button size="sm" variant="ghost">
+                                            ลบ
+                                          </Button>
+                                        </form>
+                                        <form action={confirmComparisonOption}>
+                                          <input
+                                            type="hidden"
+                                            name="home_id"
+                                            value={plan.home_id}
+                                          />
+                                          <input
+                                            type="hidden"
+                                            name="comparison_plan_id"
+                                            value={plan.id}
+                                          />
+                                          <input
+                                            type="hidden"
+                                            name="option_id"
+                                            value={option.id}
+                                          />
+                                          <Button size="sm">ยืนยันเลือก</Button>
+                                        </form>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                            ยังไม่มีตัวเลือก
+                            เพิ่มร้านหรือช่างอย่างน้อยหนึ่งรายเพื่อเริ่มเปรียบเทียบ
+                          </div>
+                        )}
+
+                        {plan.status === "comparing" ? (
+                          <details className="rounded-lg border bg-secondary/25 p-3">
+                            <summary className="cursor-pointer text-sm font-semibold text-primary">
+                              + เพิ่มร้าน / ช่าง / ตัวเลือก
+                            </summary>
+                            <form
+                              action={createComparisonOption}
+                              className="mt-4 grid gap-3 sm:grid-cols-2"
                             >
-                              <option value="per_unit">
-                                ราคาสินค้า: แยกต่อชิ้น
-                              </option>
-                              <option value="total">
-                                ราคาสินค้า: รวมทั้งหมด
-                              </option>
-                            </select>
-                            <select
-                              name="installation_price_basis"
-                              defaultValue="total"
-                              aria-label="รูปแบบค่าติดตั้ง"
-                              className={fieldClass}
+                              <input
+                                type="hidden"
+                                name="comparison_plan_id"
+                                value={plan.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="home_id"
+                                value={plan.home_id}
+                              />
+                              <input
+                                name="provider_name"
+                                placeholder="ชื่อร้าน / ช่าง"
+                                required
+                                className={fieldClass}
+                              />
+                              <input
+                                name="item_name"
+                                placeholder="สินค้า / รายละเอียดข้อเสนอ"
+                                className={fieldClass}
+                              />
+                              <input
+                                name="quantity"
+                                type="number"
+                                step="1"
+                                min="1"
+                                defaultValue="1"
+                                placeholder="จำนวนสินค้า"
+                                className={fieldClass}
+                              />
+                              <span className="hidden sm:block" />
+                              <select
+                                name="product_price_basis"
+                                defaultValue="per_unit"
+                                aria-label="รูปแบบราคาสินค้า"
+                                className={fieldClass}
+                              >
+                                <option value="per_unit">
+                                  ราคาสินค้า: แยกต่อชิ้น
+                                </option>
+                                <option value="total">
+                                  ราคาสินค้า: รวมทั้งหมด
+                                </option>
+                              </select>
+                              <select
+                                name="installation_price_basis"
+                                defaultValue="total"
+                                aria-label="รูปแบบค่าติดตั้ง"
+                                className={fieldClass}
+                              >
+                                <option value="per_unit">
+                                  ค่าติดตั้ง: แยกต่อชิ้น
+                                </option>
+                                <option value="total">
+                                  ค่าติดตั้ง: รวมทั้งหมด
+                                </option>
+                              </select>
+                              <input
+                                name="product_price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="ราคาสินค้า"
+                                className={fieldClass}
+                              />
+                              <input
+                                name="installation_price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="ค่าติดตั้ง"
+                                className={fieldClass}
+                              />
+                              <input
+                                name="product_url"
+                                type="url"
+                                placeholder="ลิงก์สินค้า / ใบเสนอราคา"
+                                className={fieldClass}
+                              />
+                              <input
+                                name="notes"
+                                placeholder="เงื่อนไข ประกัน หรือหมายเหตุ"
+                                className={fieldClass}
+                              />
+                              <Button
+                                type="submit"
+                                size="sm"
+                                className="sm:col-span-2"
+                              >
+                                เพิ่มตัวเลือก
+                              </Button>
+                            </form>
+                          </details>
+                        ) : plan.destination_id ? (
+                          <Button asChild className="w-full sm:w-auto">
+                            <Link
+                              href={`${destinationRoutes[plan.destination_type]}?homeId=${plan.home_id}`}
                             >
-                              <option value="per_unit">
-                                ค่าติดตั้ง: แยกต่อชิ้น
-                              </option>
-                              <option value="total">
-                                ค่าติดตั้ง: รวมทั้งหมด
-                              </option>
-                            </select>
-                            <input
-                              name="product_price"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="ราคาสินค้า"
-                              className={fieldClass}
-                            />
-                            <input
-                              name="installation_price"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="ค่าติดตั้ง"
-                              className={fieldClass}
-                            />
-                            <input
-                              name="product_url"
-                              type="url"
-                              placeholder="ลิงก์สินค้า / ใบเสนอราคา"
-                              className={fieldClass}
-                            />
-                            <input
-                              name="notes"
-                              placeholder="เงื่อนไข ประกัน หรือหมายเหตุ"
-                              className={fieldClass}
-                            />
-                            <Button
-                              type="submit"
-                              size="sm"
-                              className="sm:col-span-2"
-                            >
-                              เพิ่มตัวเลือก
-                            </Button>
-                          </form>
-                        </details>
-                      ) : plan.destination_id ? (
-                        <Button asChild className="w-full sm:w-auto">
-                          <Link
-                            href={`${destinationRoutes[plan.destination_type]}?homeId=${plan.home_id}`}
-                          >
-                            เปิดใน {destinationLabels[plan.destination_type]}
-                          </Link>
-                        </Button>
-                      ) : null}
-                    </CardContent>
+                              เปิดใน {destinationLabels[plan.destination_type]}
+                            </Link>
+                          </Button>
+                        ) : null}
+                      </CardContent>
                     </details>
                   </Card>
                 );
@@ -551,62 +565,69 @@ export default async function PlanningPage({
           </div>
         </section>
 
-        <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
-          <CardHeader>
-            <CardTitle className="text-base">สร้างแผนเปรียบเทียบ</CardTitle>
-            <CardDescription>
-              เลือกปลายทางไว้ก่อน เมื่อยืนยันแล้วระบบจะส่งรายการไปให้
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {home ? (
-              <form action={createComparisonPlan} className="grid gap-3">
-                <input type="hidden" name="home_id" value={home.id} />
-                <label className="grid gap-2 text-sm font-medium">
-                  หัวข้อที่ต้องการเปรียบเทียบ
-                  <input
-                    name="title"
-                    placeholder="เช่น ซื้อและติดตั้งเครื่องปรับอากาศ"
-                    required
-                    className={fieldClass}
-                  />
-                </label>
-                <label className="grid gap-2 text-sm font-medium">
-                  ห้อง
-                  <select name="room_id" className={fieldClass}>
-                    <option value="">ไม่ระบุห้อง</option>
-                    {rooms.map((room) => (
-                      <option key={room.id} value={room.id}>
-                        {room.name}
+        <ResponsiveCreatePanel
+          dialogId="create-planning-dialog"
+          title="สร้างแผนเปรียบเทียบ"
+        >
+          <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
+            <CardHeader>
+              <CardTitle className="text-base">สร้างแผนเปรียบเทียบ</CardTitle>
+              <CardDescription>
+                เลือกปลายทางไว้ก่อน เมื่อยืนยันแล้วระบบจะส่งรายการไปให้
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {home ? (
+                <form action={createComparisonPlan} className="grid gap-3">
+                  <input type="hidden" name="home_id" value={home.id} />
+                  <label className="grid gap-2 text-sm font-medium">
+                    หัวข้อที่ต้องการเปรียบเทียบ
+                    <input
+                      name="title"
+                      placeholder="เช่น ซื้อและติดตั้งเครื่องปรับอากาศ"
+                      required
+                      className={fieldClass}
+                    />
+                  </label>
+                  <label className="grid gap-2 text-sm font-medium">
+                    ห้อง
+                    <select name="room_id" className={fieldClass}>
+                      <option value="">ไม่ระบุห้อง</option>
+                      {rooms.map((room) => (
+                        <option key={room.id} value={room.id}>
+                          {room.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid gap-2 text-sm font-medium">
+                    เมื่อยืนยันแล้วส่งไป
+                    <select name="destination_type" className={fieldClass}>
+                      <option value="shopping">
+                        รายการซื้อ — สินค้า/วัสดุ
                       </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-medium">
-                  เมื่อยืนยันแล้วส่งไป
-                  <select name="destination_type" className={fieldClass}>
-                    <option value="shopping">รายการซื้อ — สินค้า/วัสดุ</option>
-                    <option value="maintenance">
-                      บำรุงรักษา — ติดตั้ง/ซ่อม/จ้างช่าง
-                    </option>
-                    <option value="renovation">รีโนเวท — งานปรับปรุง</option>
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-medium">
-                  หมายเหตุ
-                  <input name="notes" className={fieldClass} />
-                </label>
-                <Button type="submit" className="mt-1 w-full">
-                  สร้างแผน
-                </Button>
-              </form>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                สร้างบ้านก่อนเริ่มวางแผน
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                      <option value="maintenance">
+                        บำรุงรักษา — ติดตั้ง/ซ่อม/จ้างช่าง
+                      </option>
+                      <option value="renovation">รีโนเวท — งานปรับปรุง</option>
+                    </select>
+                  </label>
+                  <label className="grid gap-2 text-sm font-medium">
+                    หมายเหตุ
+                    <input name="notes" className={fieldClass} />
+                  </label>
+                  <Button type="submit" className="mt-1 w-full">
+                    สร้างแผน
+                  </Button>
+                </form>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  สร้างบ้านก่อนเริ่มวางแผน
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </ResponsiveCreatePanel>
       </div>
     </div>
   );

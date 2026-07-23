@@ -14,6 +14,7 @@ import { listHomes } from "@/features/homes/queries";
 import { listRooms } from "@/features/rooms/queries";
 import { formatDimension } from "@/lib/format";
 import { getLabel, homeTypeLabels } from "@/lib/labels";
+import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 
 export default async function HomesPage() {
   const homes = await listHomes();
@@ -29,7 +30,7 @@ export default async function HomesPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-5">
-      <section className="rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6">
+      <section className="relative rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6">
         <p className="text-sm font-medium text-white/75">
           โครงสร้างที่อยู่อาศัย
         </p>
@@ -38,6 +39,12 @@ export default async function HomesPage() {
           แยกห้องตามบ้านแต่ละหลัง เพื่อให้ค่าใช้จ่าย ทรัพย์สิน
           และงานซ่อมอยู่ถูกที่
         </p>
+        <MobileCreateDialog
+          title="เพิ่มบ้าน"
+          description="แต่ละบ้านจะมีรายการห้องแยกจากกันอย่างชัดเจน"
+        >
+          <CreateHomeForm redirectTo="/homes" />
+        </MobileCreateDialog>
       </section>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -168,7 +175,7 @@ export default async function HomesPage() {
           </div>
         </section>
 
-        <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
+        <Card className="hidden h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20 lg:block">
           <CardHeader>
             <CardTitle className="text-base">เพิ่มบ้าน</CardTitle>
             <CardDescription>

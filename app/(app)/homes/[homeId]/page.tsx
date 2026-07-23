@@ -20,6 +20,7 @@ import {
 } from "@/features/rooms/actions";
 import { listRooms } from "@/features/rooms/queries";
 import { getLabel, homeTypeLabels } from "@/lib/labels";
+import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 
 export default async function HomeDetailPage({
   params,
@@ -37,7 +38,7 @@ export default async function HomeDetailPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6">
+      <section className="relative rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6">
         <Button asChild size="sm" variant="secondary" className="mb-4">
           <Link href="/homes">กลับไปหน้าบ้าน</Link>
         </Button>
@@ -47,6 +48,12 @@ export default async function HomeDetailPage({
           {getLabel(homeTypeLabels, home.home_type) || "บ้าน"} · {rooms.length}{" "}
           ห้อง · {home.timezone}
         </p>
+        <MobileCreateDialog
+          title="เพิ่มห้อง"
+          description="สร้างห้องสำหรับบ้านหลังนี้"
+        >
+          <CreateRoomForm homeId={home.id} />
+        </MobileCreateDialog>
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
@@ -77,7 +84,7 @@ export default async function HomeDetailPage({
           </Card>
         </section>
 
-        <aside>
+        <aside className="hidden lg:block">
           <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
             <CardHeader>
               <CardTitle className="text-base">เพิ่มห้อง</CardTitle>

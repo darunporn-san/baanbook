@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
+import {
+  MobileCreateTrigger,
+  ResponsiveCreatePanel,
+} from "@/components/ui/mobile-create-dialog";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -81,7 +85,7 @@ export default async function MortgagePage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="grid gap-5 rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+      <section className="relative grid gap-5 rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/70">ภาระทางการเงิน</p>
           <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
@@ -91,12 +95,20 @@ export default async function MortgagePage({
             ติดตามเงื่อนไขเงินกู้ ดอกเบี้ยรายปี และประวัติการชำระ
           </p>
         </div>
-        <HeaderHomeSwitcher
-          action="/mortgage"
-          label="บ้านของสินเชื่อ"
-          homes={homes}
-          homeId={home?.id}
-        />
+        <div>
+          <HeaderHomeSwitcher
+            action="/mortgage"
+            label="บ้านของสินเชื่อ"
+            homes={homes}
+            homeId={home?.id}
+          />
+          {home ? (
+            <MobileCreateTrigger
+              dialogId="create-mortgage-dialog"
+              label="เพิ่มข้อมูลสินเชื่อ"
+            />
+          ) : null}
+        </div>
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
@@ -494,236 +506,159 @@ export default async function MortgagePage({
           </Card>
         </section>
 
-        <aside className="space-y-4 lg:sticky lg:top-20">
-          <Card className="border-0 bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">เพิ่มสินเชื่อบ้าน</CardTitle>
-              <CardDescription>
-                สำหรับ MVP นี้ บ้านหนึ่งหลังมีข้อมูลสินเชื่อหนึ่งชุดก็เพียงพอ
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {home && !profile ? (
-                <form action={createMortgageProfile} className="grid gap-3">
-                  <input type="hidden" name="home_id" value={home.id} />
-                  <input
-                    name="lender_name"
-                    placeholder="ธนาคาร/ผู้ให้กู้"
-                    required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <input
-                    name="principal"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="เงินต้น"
-                    required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <input
-                    name="term_months"
-                    type="number"
-                    min="1"
-                    placeholder="จำนวนเดือน"
-                    required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <DateInput
-                    name="start_date"
-                    required
-                  />
-                  <input
-                    name="notes"
-                    placeholder="บันทึก"
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <Button type="submit">เพิ่มสินเชื่อ</Button>
-                </form>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {profile
-                    ? "ลบข้อมูลสินเชื่อปัจจุบันก่อนเพิ่มชุดใหม่"
-                    : "สร้างบ้านก่อนเพิ่มสินเชื่อ"}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">
-                {showInitialRatePlan
-                  ? "ตั้งค่ารอบแรก"
-                  : "เพิ่มอัตราดอกเบี้ยในรอบปัจจุบัน"}
-              </CardTitle>
-              <CardDescription>
-                {showInitialRatePlan
-                  ? "กรอกปี 1–3 และอัตราตั้งแต่ปี 4 ของสินเชื่อเดิม"
-                  : `รอบที่ ${activeCycle?.cycle_number ?? 1} · ${activeCycle?.lender_name ?? profile?.lender_name ?? "ยังไม่มีธนาคาร"}`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {home && profile && showInitialRatePlan ? (
-                <form
-                  action={createInitialMortgageRatePlan}
-                  className="grid gap-4"
-                >
-                  <input type="hidden" name="home_id" value={home.id} />
-                  <input
-                    type="hidden"
-                    name="mortgage_profile_id"
-                    value={profile.id}
-                  />
-                  {[1, 2, 3, 4].map((year) => (
-                    <div
-                      key={year}
-                      className="grid gap-2 rounded-md border p-3"
-                    >
-                      <p className="text-sm font-semibold">
-                        {year === 4 ? "ปีที่ 4 เป็นต้นไป" : `ปีที่ ${year}`}
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <input
-                          name={`annual_interest_rate_${year}`}
-                          type="number"
-                          step="0.001"
-                          min="0"
-                          placeholder="ดอกเบี้ย %"
-                          required
-                          aria-label={`ดอกเบี้ยปีที่ ${year}`}
-                          className="h-10 min-w-0 rounded-md border bg-background px-3 text-sm"
-                        />
-                        <input
-                          name={`monthly_payment_${year}`}
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          placeholder="ยอดผ่อน/เดือน"
-                          required
-                          aria-label={`ยอดผ่อนปีที่ ${year}`}
-                          className="h-10 min-w-0 rounded-md border bg-background px-3 text-sm"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  <Button type="submit">บันทึกรอบแรก</Button>
-                </form>
-              ) : home &&
-                profile &&
-                activeCycle &&
-                availableRateYears.length ? (
-                <form action={createMortgageYearlyTerm} className="grid gap-3">
-                  <input type="hidden" name="home_id" value={home.id} />
-                  <input
-                    type="hidden"
-                    name="mortgage_profile_id"
-                    value={profile.id}
-                  />
-                  <input
-                    type="hidden"
-                    name="mortgage_rate_cycle_id"
-                    value={activeCycle.id}
-                  />
-                  <select
-                    name="loan_year"
-                    required
-                    aria-label="ปีของรอบดอกเบี้ย"
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  >
-                    {availableRateYears.map((year) => (
-                      <option key={year} value={year}>
-                        {year === 4 ? "ปีที่ 4 เป็นต้นไป" : `ปีที่ ${year}`}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    name="annual_interest_rate"
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    placeholder="ดอกเบี้ยต่อปี %"
-                    required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <input
-                    name="monthly_payment"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    placeholder="ยอดผ่อนต่อเดือน"
-                    required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <input
-                    name="notes"
-                    placeholder="บันทึกเงื่อนไข"
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <Button type="submit">เพิ่มอัตราดอกเบี้ย</Button>
-                </form>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {availableRateYears.length
-                    ? "เพิ่มข้อมูลสินเชื่อก่อน"
-                    : "บันทึกอัตราของรอบนี้ครบแล้ว"}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {!showInitialRatePlan ? (
+        <ResponsiveCreatePanel
+          dialogId="create-mortgage-dialog"
+          title="เพิ่มข้อมูลสินเชื่อ"
+        >
+          <aside className="space-y-4 lg:sticky lg:top-20">
             <Card className="border-0 bg-white shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base">
-                  เริ่มรอบดอกเบี้ยใหม่
-                </CardTitle>
+                <CardTitle className="text-base">เพิ่มสินเชื่อบ้าน</CardTitle>
                 <CardDescription>
-                  ใช้เฉพาะเมื่อรีไฟแนนซ์หรือขอรีเทนชั่น
-                  ไม่จำเป็นต้องเลือกหากใช้สัญญาเดิมต่อ
+                  สำหรับ MVP นี้ บ้านหนึ่งหลังมีข้อมูลสินเชื่อหนึ่งชุดก็เพียงพอ
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {home && profile ? (
-                  <form action={createMortgageRateCycle} className="grid gap-3">
+                {home && !profile ? (
+                  <form action={createMortgageProfile} className="grid gap-3">
+                    <input type="hidden" name="home_id" value={home.id} />
+                    <input
+                      name="lender_name"
+                      placeholder="ธนาคาร/ผู้ให้กู้"
+                      required
+                      className="h-10 rounded-md border bg-background px-3 text-sm"
+                    />
+                    <input
+                      name="principal"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="เงินต้น"
+                      required
+                      className="h-10 rounded-md border bg-background px-3 text-sm"
+                    />
+                    <input
+                      name="term_months"
+                      type="number"
+                      min="1"
+                      placeholder="จำนวนเดือน"
+                      required
+                      className="h-10 rounded-md border bg-background px-3 text-sm"
+                    />
+                    <DateInput name="start_date" required />
+                    <input
+                      name="notes"
+                      placeholder="บันทึก"
+                      className="h-10 rounded-md border bg-background px-3 text-sm"
+                    />
+                    <Button type="submit">เพิ่มสินเชื่อ</Button>
+                  </form>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {profile
+                      ? "ลบข้อมูลสินเชื่อปัจจุบันก่อนเพิ่มชุดใหม่"
+                      : "สร้างบ้านก่อนเพิ่มสินเชื่อ"}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {showInitialRatePlan
+                    ? "ตั้งค่ารอบแรก"
+                    : "เพิ่มอัตราดอกเบี้ยในรอบปัจจุบัน"}
+                </CardTitle>
+                <CardDescription>
+                  {showInitialRatePlan
+                    ? "กรอกปี 1–3 และอัตราตั้งแต่ปี 4 ของสินเชื่อเดิม"
+                    : `รอบที่ ${activeCycle?.cycle_number ?? 1} · ${activeCycle?.lender_name ?? profile?.lender_name ?? "ยังไม่มีธนาคาร"}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {home && profile && showInitialRatePlan ? (
+                  <form
+                    action={createInitialMortgageRatePlan}
+                    className="grid gap-4"
+                  >
                     <input type="hidden" name="home_id" value={home.id} />
                     <input
                       type="hidden"
                       name="mortgage_profile_id"
                       value={profile.id}
                     />
+                    {[1, 2, 3, 4].map((year) => (
+                      <div
+                        key={year}
+                        className="grid gap-2 rounded-md border p-3"
+                      >
+                        <p className="text-sm font-semibold">
+                          {year === 4 ? "ปีที่ 4 เป็นต้นไป" : `ปีที่ ${year}`}
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <input
+                            name={`annual_interest_rate_${year}`}
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            placeholder="ดอกเบี้ย %"
+                            required
+                            aria-label={`ดอกเบี้ยปีที่ ${year}`}
+                            className="h-10 min-w-0 rounded-md border bg-background px-3 text-sm"
+                          />
+                          <input
+                            name={`monthly_payment_${year}`}
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            placeholder="ยอดผ่อน/เดือน"
+                            required
+                            aria-label={`ยอดผ่อนปีที่ ${year}`}
+                            className="h-10 min-w-0 rounded-md border bg-background px-3 text-sm"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <Button type="submit">บันทึกรอบแรก</Button>
+                  </form>
+                ) : home &&
+                  profile &&
+                  activeCycle &&
+                  availableRateYears.length ? (
+                  <form
+                    action={createMortgageYearlyTerm}
+                    className="grid gap-3"
+                  >
+                    <input type="hidden" name="home_id" value={home.id} />
+                    <input
+                      type="hidden"
+                      name="mortgage_profile_id"
+                      value={profile.id}
+                    />
+                    <input
+                      type="hidden"
+                      name="mortgage_rate_cycle_id"
+                      value={activeCycle.id}
+                    />
                     <select
-                      name="change_type"
+                      name="loan_year"
                       required
-                      defaultValue=""
+                      aria-label="ปีของรอบดอกเบี้ย"
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     >
-                      <option value="" disabled>
-                        เลือกวิธีปรับสัญญา
-                      </option>
-                      <option value="refinance">รีไฟแนนซ์</option>
-                      <option value="retention">รีเทนชั่น</option>
+                      {availableRateYears.map((year) => (
+                        <option key={year} value={year}>
+                          {year === 4 ? "ปีที่ 4 เป็นต้นไป" : `ปีที่ ${year}`}
+                        </option>
+                      ))}
                     </select>
-                    <input
-                      name="lender_name"
-                      defaultValue={
-                        activeCycle?.lender_name ?? profile.lender_name
-                      }
-                      placeholder="ธนาคารรอบใหม่"
-                      required
-                      className="h-10 rounded-md border bg-background px-3 text-sm"
-                    />
-                    <DateInput
-                      name="start_date"
-                      required
-                      aria-label="วันที่เริ่มรอบใหม่"
-                    />
                     <input
                       name="annual_interest_rate"
                       type="number"
                       step="0.001"
                       min="0"
-                      placeholder="ดอกเบี้ยปีที่ 1 %"
+                      placeholder="ดอกเบี้ยต่อปี %"
                       required
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     />
@@ -732,16 +667,160 @@ export default async function MortgagePage({
                       type="number"
                       step="0.01"
                       min="0.01"
-                      placeholder="ยอดผ่อนต่อเดือนปีที่ 1"
+                      placeholder="ยอดผ่อนต่อเดือน"
                       required
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     />
                     <input
                       name="notes"
-                      placeholder="บันทึกเงื่อนไขรอบใหม่"
+                      placeholder="บันทึกเงื่อนไข"
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     />
-                    <Button type="submit">เริ่มรอบใหม่</Button>
+                    <Button type="submit">เพิ่มอัตราดอกเบี้ย</Button>
+                  </form>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {availableRateYears.length
+                      ? "เพิ่มข้อมูลสินเชื่อก่อน"
+                      : "บันทึกอัตราของรอบนี้ครบแล้ว"}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {!showInitialRatePlan ? (
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    เริ่มรอบดอกเบี้ยใหม่
+                  </CardTitle>
+                  <CardDescription>
+                    ใช้เฉพาะเมื่อรีไฟแนนซ์หรือขอรีเทนชั่น
+                    ไม่จำเป็นต้องเลือกหากใช้สัญญาเดิมต่อ
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {home && profile ? (
+                    <form
+                      action={createMortgageRateCycle}
+                      className="grid gap-3"
+                    >
+                      <input type="hidden" name="home_id" value={home.id} />
+                      <input
+                        type="hidden"
+                        name="mortgage_profile_id"
+                        value={profile.id}
+                      />
+                      <select
+                        name="change_type"
+                        required
+                        defaultValue=""
+                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="" disabled>
+                          เลือกวิธีปรับสัญญา
+                        </option>
+                        <option value="refinance">รีไฟแนนซ์</option>
+                        <option value="retention">รีเทนชั่น</option>
+                      </select>
+                      <input
+                        name="lender_name"
+                        defaultValue={
+                          activeCycle?.lender_name ?? profile.lender_name
+                        }
+                        placeholder="ธนาคารรอบใหม่"
+                        required
+                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                      />
+                      <DateInput
+                        name="start_date"
+                        required
+                        aria-label="วันที่เริ่มรอบใหม่"
+                      />
+                      <input
+                        name="annual_interest_rate"
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        placeholder="ดอกเบี้ยปีที่ 1 %"
+                        required
+                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                      />
+                      <input
+                        name="monthly_payment"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        placeholder="ยอดผ่อนต่อเดือนปีที่ 1"
+                        required
+                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                      />
+                      <input
+                        name="notes"
+                        placeholder="บันทึกเงื่อนไขรอบใหม่"
+                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                      />
+                      <Button type="submit">เริ่มรอบใหม่</Button>
+                    </form>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      เพิ่มข้อมูลสินเชื่อก่อน
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card className="border-0 bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">เพิ่มรายการชำระ</CardTitle>
+                <CardDescription>
+                  แยกเงินต้นและดอกเบี้ยเองเพื่อให้การคำนวณโปร่งใส
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {home && profile ? (
+                  <form action={createMortgagePayment} className="grid gap-3">
+                    <input type="hidden" name="home_id" value={home.id} />
+                    <input
+                      type="hidden"
+                      name="mortgage_profile_id"
+                      value={profile.id}
+                    />
+                    <DateInput name="payment_date" required />
+                    <input
+                      name="amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="ยอดชำระ"
+                      required
+                      className="h-10 rounded-md border bg-background px-3 text-sm"
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <input
+                        name="principal"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="เงินต้น"
+                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                      />
+                      <input
+                        name="interest"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="ดอกเบี้ย"
+                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                      />
+                    </div>
+                    <input
+                      name="notes"
+                      placeholder="บันทึก"
+                      className="h-10 rounded-md border bg-background px-3 text-sm"
+                    />
+                    <Button type="submit">เพิ่มรายการชำระ</Button>
                   </form>
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -750,70 +829,8 @@ export default async function MortgagePage({
                 )}
               </CardContent>
             </Card>
-          ) : null}
-
-          <Card className="border-0 bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">เพิ่มรายการชำระ</CardTitle>
-              <CardDescription>
-                แยกเงินต้นและดอกเบี้ยเองเพื่อให้การคำนวณโปร่งใส
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {home && profile ? (
-                <form action={createMortgagePayment} className="grid gap-3">
-                  <input type="hidden" name="home_id" value={home.id} />
-                  <input
-                    type="hidden"
-                    name="mortgage_profile_id"
-                    value={profile.id}
-                  />
-                  <DateInput
-                    name="payment_date"
-                    required
-                  />
-                  <input
-                    name="amount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="ยอดชำระ"
-                    required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <input
-                      name="principal"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="เงินต้น"
-                      className="h-10 rounded-md border bg-background px-3 text-sm"
-                    />
-                    <input
-                      name="interest"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="ดอกเบี้ย"
-                      className="h-10 rounded-md border bg-background px-3 text-sm"
-                    />
-                  </div>
-                  <input
-                    name="notes"
-                    placeholder="บันทึก"
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  />
-                  <Button type="submit">เพิ่มรายการชำระ</Button>
-                </form>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  เพิ่มข้อมูลสินเชื่อก่อน
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </aside>
+          </aside>
+        </ResponsiveCreatePanel>
       </div>
     </div>
   );

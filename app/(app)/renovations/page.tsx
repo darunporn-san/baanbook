@@ -19,6 +19,10 @@ import { listRenovationProjects } from "@/features/renovations/queries";
 import { listRooms } from "@/features/rooms/queries";
 import { formatDate, formatMoney } from "@/lib/format";
 import { commonText, getLabel, renovationStatusLabels } from "@/lib/labels";
+import {
+  MobileCreateTrigger,
+  ResponsiveCreatePanel,
+} from "@/components/ui/mobile-create-dialog";
 
 const statusStyles: Record<string, string> = {
   planning: "bg-[#fff5d8] text-[#705b2f]",
@@ -53,7 +57,7 @@ export default async function RenovationsPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="grid gap-5 rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+      <section className="relative grid gap-5 rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/75">จัดการโปรเจกต์</p>
           <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">รีโนเวท</h1>
@@ -61,12 +65,20 @@ export default async function RenovationsPage({
             ดูงบประมาณ สถานะงาน ผู้รับเหมา และกำหนดการในหน้าเดียว
           </p>
         </div>
-        <HeaderHomeSwitcher
-          action="/renovations"
-          label="บ้านของงานรีโนเวท"
-          homes={homes}
-          homeId={home?.id}
-        />
+        <div>
+          <HeaderHomeSwitcher
+            action="/renovations"
+            label="บ้านของงานรีโนเวท"
+            homes={homes}
+            homeId={home?.id}
+          />
+          {home ? (
+            <MobileCreateTrigger
+              dialogId="create-renovation-dialog"
+              label="เพิ่มโปรเจกต์ใหม่"
+            />
+          ) : null}
+        </div>
       </section>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -333,92 +345,95 @@ export default async function RenovationsPage({
           </section>
         </section>
 
-        <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
-          <CardHeader>
-            <CardTitle className="text-base">เพิ่มโปรเจกต์ใหม่</CardTitle>
-            <CardDescription>
-              บันทึกข้อมูลงาน งบประมาณ และกำหนดการ
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {home ? (
-              <form action={createRenovationProject} className="grid gap-3">
-                <input type="hidden" name="home_id" value={home.id} />
-                <label className="grid gap-2 text-sm font-medium">
-                  ชื่อโปรเจกต์
-                  <input
-                    name="name"
-                    placeholder="เช่น ปรับปรุงห้องครัว"
-                    required
-                    className={fieldClass}
-                  />
-                </label>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+        <ResponsiveCreatePanel
+          dialogId="create-renovation-dialog"
+          title="เพิ่มโปรเจกต์ใหม่"
+        >
+          <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
+            <CardHeader>
+              <CardTitle className="text-base">เพิ่มโปรเจกต์ใหม่</CardTitle>
+              <CardDescription>
+                บันทึกข้อมูลงาน งบประมาณ และกำหนดการ
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {home ? (
+                <form action={createRenovationProject} className="grid gap-3">
+                  <input type="hidden" name="home_id" value={home.id} />
                   <label className="grid gap-2 text-sm font-medium">
-                    ห้อง
-                    <select name="room_id" className={fieldClass}>
-                      <option value="">{commonText.noRoom}</option>
-                      {rooms.map((room) => (
-                        <option key={room.id} value={room.id}>
-                          {room.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-2 text-sm font-medium">
-                    สถานะ
-                    <select name="status" className={fieldClass}>
-                      {Object.entries(renovationStatusLabels).map(
-                        ([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </label>
-                </div>
-                <label className="grid gap-2 text-sm font-medium">
-                  ผู้รับเหมา
-                  <input name="contractor_name" className={fieldClass} />
-                </label>
-                <label className="grid gap-2 text-sm font-medium">
-                  งบประมาณ
-                  <input
-                    name="budget"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className={fieldClass}
-                  />
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="grid gap-2 text-sm font-medium">
-                    วันที่เริ่ม
-                    <DateInput
-                      name="start_date"
+                    ชื่อโปรเจกต์
+                    <input
+                      name="name"
+                      placeholder="เช่น ปรับปรุงห้องครัว"
+                      required
+                      className={fieldClass}
                     />
                   </label>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                    <label className="grid gap-2 text-sm font-medium">
+                      ห้อง
+                      <select name="room_id" className={fieldClass}>
+                        <option value="">{commonText.noRoom}</option>
+                        {rooms.map((room) => (
+                          <option key={room.id} value={room.id}>
+                            {room.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-2 text-sm font-medium">
+                      สถานะ
+                      <select name="status" className={fieldClass}>
+                        {Object.entries(renovationStatusLabels).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+                  </div>
                   <label className="grid gap-2 text-sm font-medium">
-                    วันที่สิ้นสุด
-                    <DateInput name="end_date" />
+                    ผู้รับเหมา
+                    <input name="contractor_name" className={fieldClass} />
                   </label>
-                </div>
-                <label className="grid gap-2 text-sm font-medium">
-                  บันทึก
-                  <input name="notes" className={fieldClass} />
-                </label>
-                <Button type="submit" className="mt-1 w-full">
-                  เพิ่มโปรเจกต์
-                </Button>
-              </form>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                สร้างบ้านก่อนเพิ่มงานรีโนเวท
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                  <label className="grid gap-2 text-sm font-medium">
+                    งบประมาณ
+                    <input
+                      name="budget"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className={fieldClass}
+                    />
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="grid gap-2 text-sm font-medium">
+                      วันที่เริ่ม
+                      <DateInput name="start_date" />
+                    </label>
+                    <label className="grid gap-2 text-sm font-medium">
+                      วันที่สิ้นสุด
+                      <DateInput name="end_date" />
+                    </label>
+                  </div>
+                  <label className="grid gap-2 text-sm font-medium">
+                    บันทึก
+                    <input name="notes" className={fieldClass} />
+                  </label>
+                  <Button type="submit" className="mt-1 w-full">
+                    เพิ่มโปรเจกต์
+                  </Button>
+                </form>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  สร้างบ้านก่อนเพิ่มงานรีโนเวท
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </ResponsiveCreatePanel>
       </div>
     </div>
   );

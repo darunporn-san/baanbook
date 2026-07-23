@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { CreateMaintenanceForm } from "@/components/maintenance/create-maintenance-form";
 import { MaintenanceRow } from "@/components/maintenance/maintenance-row";
+import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 import { listAppliances } from "@/features/appliances/queries";
 import { listHomes } from "@/features/homes/queries";
 import {
@@ -43,20 +44,37 @@ export default async function MaintenancePage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="grid gap-5 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+      <section className="relative grid gap-5 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/70">งานที่ต้องดูแล</p>
-          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">บำรุงรักษา</h1>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
+            บำรุงรักษา
+          </h1>
           <p className="mt-2 text-sm text-white/80">
             วางแผน ติดตาม และปิดงานดูแลบ้าน
           </p>
         </div>
-        <HeaderHomeSwitcher
-          action="/maintenance"
-          label="บ้านของงานบำรุงรักษา"
-          homes={homes}
-          homeId={home?.id}
-        />
+        <div>
+          <HeaderHomeSwitcher
+            action="/maintenance"
+            label="บ้านของงานบำรุงรักษา"
+            homes={homes}
+            homeId={home?.id}
+          />
+          {home ? (
+            <MobileCreateDialog
+              title="เพิ่มงาน"
+              description="ผูกกับห้องหรือเครื่องใช้ไฟฟ้าเมื่อจำเป็น"
+            >
+              <CreateMaintenanceForm
+                homeId={home.id}
+                homes={homes}
+                rooms={rooms}
+                appliances={appliances}
+              />
+            </MobileCreateDialog>
+          ) : null}
+        </div>
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
@@ -120,7 +138,7 @@ export default async function MaintenancePage({
           </Card>
         </section>
 
-        <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
+        <Card className="hidden h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20 lg:block">
           <CardHeader>
             <CardTitle className="text-base">เพิ่มงาน</CardTitle>
             <CardDescription>

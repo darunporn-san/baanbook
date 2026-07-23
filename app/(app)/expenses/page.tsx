@@ -11,6 +11,7 @@ import { ApplianceExpenseCard } from "@/components/expense/appliance-expense-car
 import { CreateExpenseForm } from "@/components/expense/create-expense-form";
 import { ExpenseRow } from "@/components/expense/expense-row";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
+import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 import { listAppliances } from "@/features/appliances/queries";
 import {
   deleteApplianceExpense,
@@ -28,10 +29,7 @@ import {
   isAppointmentDueWithinDays,
 } from "@/lib/appointments";
 import { formatMoney } from "@/lib/format";
-import {
-  isInstallmentDone,
-  isInstallmentDueInMonth,
-} from "@/lib/installments";
+import { isInstallmentDone, isInstallmentDueInMonth } from "@/lib/installments";
 
 export default async function ExpensesPage({
   searchParams,
@@ -222,10 +220,7 @@ export default async function ExpensesPage({
   );
   const filteredTotal =
     activeView === "general"
-      ? normalExpenses.reduce(
-          (sum, expense) => sum + expense.amount_minor,
-          0,
-        )
+      ? normalExpenses.reduce((sum, expense) => sum + expense.amount_minor, 0)
       : applianceItems.reduce(
           (sum, item) => sum + (item.expense?.amount_minor ?? 0),
           0,
@@ -233,7 +228,7 @@ export default async function ExpensesPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="grid gap-5 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+      <section className="relative grid gap-5 rounded-xl bg-[#00bfa5] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/70">การเงินของบ้าน</p>
           <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
@@ -246,13 +241,23 @@ export default async function ExpensesPage({
             </p>
           </div>
         </div>
-        <HeaderHomeSwitcher
-          action="/expenses"
-          label="บ้านของค่าใช้จ่าย"
-          homes={homes}
-          homeId={home?.id}
-          hiddenFields={{ view: activeView }}
-        />
+        <div>
+          <HeaderHomeSwitcher
+            action="/expenses"
+            label="บ้านของค่าใช้จ่าย"
+            homes={homes}
+            homeId={home?.id}
+            hiddenFields={{ view: activeView }}
+          />
+          {home ? (
+            <MobileCreateDialog
+              title="เพิ่มรายการ"
+              description="บันทึกค่าใช้จ่าย และเพิ่มเครื่องใช้ไฟฟ้า/ประกันได้ในฟอร์มเดียว"
+            >
+              <CreateExpenseForm homeId={home.id} homes={homes} rooms={rooms} />
+            </MobileCreateDialog>
+          ) : null}
+        </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-0 bg-white shadow-sm">
@@ -368,7 +373,10 @@ export default async function ExpensesPage({
                 <input type="hidden" name="homeId" value={home?.id} />
                 <input type="hidden" name="view" value={activeView} />
                 <div className="space-y-1.5">
-                  <label htmlFor="expense-filter-q" className="text-xs font-medium">
+                  <label
+                    htmlFor="expense-filter-q"
+                    className="text-xs font-medium"
+                  >
                     ค้นหารายการ
                   </label>
                   <input
@@ -482,7 +490,9 @@ export default async function ExpensesPage({
               <div className="grid gap-3 rounded-lg bg-primary/10 p-4 sm:grid-cols-2">
                 <div>
                   <p className="text-xs text-muted-foreground">ผลลัพธ์ที่พบ</p>
-                  <p className="mt-1 text-lg font-semibold">{itemCount} รายการ</p>
+                  <p className="mt-1 text-lg font-semibold">
+                    {itemCount} รายการ
+                  </p>
                 </div>
                 <div className="sm:text-right">
                   <p className="text-xs text-muted-foreground">
@@ -606,7 +616,7 @@ export default async function ExpensesPage({
             </CardContent>
           </Card>
         </section>
-        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+        <aside className="hidden space-y-4 lg:sticky lg:top-20 lg:block lg:self-start">
           <Card className="border-0 bg-white shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">เพิ่มรายการ</CardTitle>

@@ -14,6 +14,7 @@ import { listHomes } from "@/features/homes/queries";
 import { listRooms } from "@/features/rooms/queries";
 import { formatDate } from "@/lib/format";
 import { commonText, documentTypeLabels, getLabel } from "@/lib/labels";
+import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 
 export default async function DocumentsPage({
   searchParams,
@@ -28,12 +29,20 @@ export default async function DocumentsPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6">
+      <section className="relative rounded-xl bg-[#246a78] p-5 text-white shadow-sm sm:p-6">
         <p className="text-sm font-medium text-white/70">คลังข้อมูลของบ้าน</p>
         <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">เอกสาร</h1>
         <p className="mt-2 text-sm text-white/80">
           เก็บใบเสร็จ ประกัน คู่มือ และสัญญา
         </p>
+        {home ? (
+          <MobileCreateDialog
+            title="เพิ่มเอกสาร"
+            description="แนบไฟล์หรือบันทึกข้อมูลเอกสารก่อน"
+          >
+            <CreateDocumentForm homeId={home.id} homes={homes} rooms={rooms} />
+          </MobileCreateDialog>
+        ) : null}
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
@@ -94,7 +103,7 @@ export default async function DocumentsPage({
             )}
           </div>
         </section>
-        <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
+        <Card className="hidden h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20 lg:block">
           <CardHeader>
             <CardTitle className="text-base">เพิ่มเอกสาร</CardTitle>
             <CardDescription>แนบไฟล์หรือบันทึกข้อมูลเอกสารก่อน</CardDescription>

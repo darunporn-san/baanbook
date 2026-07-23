@@ -17,6 +17,7 @@ import { listHomes } from "@/features/homes/queries";
 import { listRooms } from "@/features/rooms/queries";
 import { formatDate } from "@/lib/format";
 import { commonText } from "@/lib/labels";
+import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 
 export default async function AppliancesPage({
   searchParams,
@@ -31,7 +32,7 @@ export default async function AppliancesPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl bg-[#ffd36a] p-5 text-[#514227] shadow-sm sm:p-6">
+      <section className="relative rounded-xl bg-[#ffd36a] p-5 text-[#514227] shadow-sm sm:p-6">
         <p className="text-sm font-medium text-[#705b2f]">ทรัพย์สินภายในบ้าน</p>
         <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
           เครื่องใช้ไฟฟ้า
@@ -39,6 +40,14 @@ export default async function AppliancesPage({
         <p className="mt-2 text-sm text-[#705b2f]">
           ติดตามเครื่องใช้ การซื้อ และวันหมดประกัน
         </p>
+        {home ? (
+          <MobileCreateDialog
+            title="เพิ่มเครื่องใช้ไฟฟ้า"
+            description="เก็บข้อมูลการซื้อและประกัน"
+          >
+            <CreateApplianceForm homeId={home.id} homes={homes} rooms={rooms} />
+          </MobileCreateDialog>
+        ) : null}
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
@@ -78,8 +87,8 @@ export default async function AppliancesPage({
                         item.warranty_lifetime
                           ? "ประกันตลอดชีพ"
                           : item.warranty_end_date
-                          ? `ประกันถึง ${formatDate(item.warranty_end_date)}`
-                          : null,
+                            ? `ประกันถึง ${formatDate(item.warranty_end_date)}`
+                            : null,
                       ]
                         .filter(Boolean)
                         .join(" · ") || commonText.noDetails}
@@ -109,7 +118,7 @@ export default async function AppliancesPage({
             )}
           </div>
         </section>
-        <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
+        <Card className="hidden h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20 lg:block">
           <CardHeader>
             <CardTitle className="text-base">เพิ่มเครื่องใช้ไฟฟ้า</CardTitle>
             <CardDescription>เก็บข้อมูลการซื้อและประกัน</CardDescription>

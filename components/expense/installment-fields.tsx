@@ -66,8 +66,10 @@ export function InstallmentFields({
   }, [calculateEndDate, defaultEndDate]);
 
   return (
-    <div className="rounded-md border bg-secondary/20 p-3">
-      <p className="text-sm font-semibold">การผ่อนชำระ (ถ้ามี)</p>
+    <details className="rounded-md border bg-secondary/20 p-3">
+      <summary className="cursor-pointer list-none text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+        การผ่อนชำระ (ถ้ามี)
+      </summary>
       <p className="mt-1 text-xs text-muted-foreground">
         ระบบคำนวณยอดต่อเดือนและวันสิ้นสุดให้อัตโนมัติ
       </p>
@@ -127,6 +129,6 @@ export function InstallmentFields({
           />
         </div>
       </div>
-    </div>
+    </details>
   );
 }

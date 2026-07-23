@@ -33,6 +33,52 @@ type YearlyTerm = {
   monthly_payment_minor: number | null;
 };
 
+export function getMortgageDueRowStatus(dueDate: string, today: string) {
+  const daysUntilDue =
+    (Date.parse(`${dueDate}T00:00:00Z`) -
+      Date.parse(`${today}T00:00:00Z`)) /
+    86_400_000;
+
+  if (daysUntilDue >= 0 && daysUntilDue <= 3) return "urgent";
+  if (dueDate.slice(0, 7) === today.slice(0, 7)) return "current-month";
+  return null;
+}
+
+export function calculateMortgageInterestSavings(
+  balanceMinor: number,
+  extraPaymentMinor: number,
+  schedule: Pick<
+    MortgageScheduleRow,
+    "annualInterestRate" | "paymentMinor"
+  >[],
+) {
+  const totalInterest = (startingBalanceMinor: number) => {
+    let balance = startingBalanceMinor;
+    let interestTotal = 0;
+
+    for (const row of schedule) {
+      if (balance <= 0) break;
+      const interest = Math.round(
+        (balance * row.annualInterestRate) / 1200,
+      );
+      const payment = Math.min(
+        row.paymentMinor,
+        balance + interest,
+      );
+      interestTotal += interest;
+      balance = Math.max(0, balance + interest - payment);
+    }
+
+    return interestTotal;
+  };
+
+  return Math.max(
+    0,
+    totalInterest(balanceMinor) -
+      totalInterest(Math.max(0, balanceMinor - extraPaymentMinor)),
+  );
+}
+
 function addMonths(value: string, months: number) {
   const [year, month, day] = value.split("-").map(Number);
   const targetMonth = month - 1 + months;
@@ -80,7 +126,7 @@ export function calculateMortgageSchedule({
   let balanceMinor = principalMinor;
 
   for (let installment = 1; installment <= termMonths; installment += 1) {
-    const dueDate = addMonths(startDate, installment);
+    const dueDate = addMonths(startDate, installment - 1);
     const cycle =
       orderedCycles.filter((item) => item.start_date <= dueDate).at(-1) ??
       orderedCycles[0];

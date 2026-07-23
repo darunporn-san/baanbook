@@ -5,18 +5,27 @@ import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { createMortgagePayment } from "@/features/mortgage/actions";
 import { formatDate, formatMoney } from "@/lib/format";
-import type { AdjustedMortgageScheduleRow } from "@/lib/mortgage-amortization";
+import {
+  calculateMortgageInterestSavings,
+  type AdjustedMortgageScheduleRow,
+  type MortgageScheduleRow,
+} from "@/lib/mortgage-amortization";
 
 export function CreateMortgagePaymentForm({
   homeId,
   profileId,
   currency,
   suggestion,
+  futureSchedule,
 }: {
   homeId: string;
   profileId: string;
   currency: string;
   suggestion?: AdjustedMortgageScheduleRow;
+  futureSchedule: Pick<
+    MortgageScheduleRow,
+    "annualInterestRate" | "paymentMinor"
+  >[];
 }) {
   const [mode, setMode] = useState<"scheduled" | "custom">(
     suggestion ? "scheduled" : "custom",
@@ -38,6 +47,18 @@ export function CreateMortgagePaymentForm({
   const balanceAfterMinor = suggestion
     ? Math.max(0, suggestion.balanceBeforeMinor - principalMinor)
     : 0;
+  const scheduledBalanceAfterMinor = suggestion
+    ? Math.max(
+        0,
+        suggestion.balanceBeforeMinor -
+          (suggestion.paymentMinor - suggestion.adjustedInterestMinor),
+      )
+    : 0;
+  const interestSavingsMinor = calculateMortgageInterestSavings(
+    scheduledBalanceAfterMinor,
+    extraMinor,
+    futureSchedule,
+  );
 
   return (
     <form action={createMortgagePayment} className="grid gap-4">
@@ -162,6 +183,14 @@ export function CreateMortgagePaymentForm({
             <p className="text-xs text-muted-foreground">คงเหลือหลังชำระ</p>
             <p className="mt-1 font-semibold text-primary">
               {formatMoney(balanceAfterMinor, currency)}
+            </p>
+          </div>
+          <div className="col-span-2 border-t pt-3">
+            <p className="text-xs text-muted-foreground">
+              ดอกเบี้ยลดลงโดยประมาณ
+            </p>
+            <p className="mt-1 font-semibold text-emerald-700">
+              {formatMoney(interestSavingsMinor, currency)}
             </p>
           </div>
         </div>

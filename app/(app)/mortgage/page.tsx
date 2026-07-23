@@ -40,7 +40,93 @@ import { commonText } from "@/lib/labels";
 import {
   adjustMortgageScheduleForPayments,
   calculateMortgageSchedule,
+  getMortgageDueRowStatus,
+  type AdjustedMortgageScheduleRow,
 } from "@/lib/mortgage-amortization";
+
+function MortgageScheduleMobileCard({
+  row,
+  today,
+  currency,
+}: {
+  row: AdjustedMortgageScheduleRow;
+  today: string;
+  currency?: string;
+}) {
+  const dueStatus = getMortgageDueRowStatus(row.dueDate, today);
+  const fields = [
+    {
+      label: "จ่ายจริง",
+      value:
+        row.actualPaymentMinor == null
+          ? "—"
+          : formatMoney(row.actualPaymentMinor, currency),
+    },
+    {
+      label: "ยอดโป๊ะ",
+      value: row.extraPaymentMinor
+        ? formatMoney(row.extraPaymentMinor, currency)
+        : "—",
+      className: "text-[#b84e40]",
+    },
+    {
+      label: "ดอกเบี้ย",
+      value: formatMoney(row.adjustedInterestMinor, currency),
+      className: "text-[#9a6d10]",
+    },
+    {
+      label: "เงินต้น",
+      value: formatMoney(row.adjustedPrincipalMinor, currency),
+      className: "text-primary",
+    },
+    {
+      label: "คงเหลือเดิม",
+      value: formatMoney(row.balanceMinor, currency),
+    },
+    {
+      label: "หลังโป๊ะ",
+      value: formatMoney(row.adjustedBalanceMinor, currency),
+      className: "text-primary",
+    },
+  ];
+
+  return (
+    <details
+      className={`group overflow-hidden rounded-xl border ${
+        dueStatus === "urgent"
+          ? "bg-red-100"
+          : dueStatus === "current-month"
+            ? "bg-amber-100"
+            : "bg-white"
+      }`}
+    >
+      <summary className="grid cursor-pointer list-none grid-cols-2 gap-4 p-4 [&::-webkit-details-marker]:hidden">
+        <div>
+          <span className="block text-[11px] text-muted-foreground">งวด</span>
+          <span className="mt-0.5 block font-semibold">{row.installment}</span>
+        </div>
+        <div className="text-right">
+          <span className="block text-[11px] text-muted-foreground">วันที่</span>
+          <span className="mt-0.5 block font-medium">
+            {formatDate(row.dueDate)}
+          </span>
+        </div>
+      </summary>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-current/10 px-4 pb-4 pt-3">
+        {fields.map((field, index) => (
+          <div key={field.label} className={index % 2 ? "text-right" : ""}>
+            <dt className="text-[11px] text-muted-foreground">{field.label}</dt>
+            <dd
+              className={`mt-0.5 font-medium tabular-nums ${field.className ?? ""}`}
+            >
+              {field.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
+}
 
 export default async function MortgagePage({
   searchParams,
@@ -55,6 +141,12 @@ export default async function MortgagePage({
   const payments = await listMortgagePayments(profile?.id);
   const rateCycles = await listMortgageRateCycles(profile?.id);
   const yearlyTerms = await listMortgageYearlyTerms(profile?.id);
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
   const activeCycle = rateCycles.at(-1);
   const activeCycleTerms = yearlyTerms.filter(
     (term) => term.mortgage_rate_cycle_id === activeCycle?.id,
@@ -111,7 +203,7 @@ export default async function MortgagePage({
   const nextScheduledPayment = adjustedMortgageSchedule[payments.length];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5">
       <section className="relative grid gap-5 overflow-hidden rounded-2xl bg-gradient-to-br from-[#174f59] to-[#2d7f8c] p-5 text-white shadow-sm sm:p-7 lg:grid-cols-[1fr_360px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/70">ภาระทางการเงิน</p>
@@ -137,8 +229,8 @@ export default async function MortgagePage({
           ) : null}
         </div>
       </section>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="space-y-4">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="min-w-0 space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <Card className="border-0 bg-white shadow-sm">
               <CardContent className="flex items-center gap-3 p-4">
@@ -467,7 +559,7 @@ export default async function MortgagePage({
           {mortgageSchedule.length ? (
             <details
               open
-              className="group overflow-hidden rounded-lg bg-card text-card-foreground shadow-sm"
+              className="group min-w-0 max-w-full overflow-hidden rounded-lg bg-card text-card-foreground shadow-sm"
             >
               <summary className="cursor-pointer list-none border-b border-transparent bg-secondary/25 p-6 group-open:border-border [&::-webkit-details-marker]:hidden">
                 <span className="block text-base font-semibold leading-none">
@@ -480,19 +572,23 @@ export default async function MortgagePage({
                   {formatDate(mortgageSchedule.at(-1)?.dueDate)}
                 </span>
               </summary>
-              <CardContent className="p-5">
-                <div className="max-h-[560px] overflow-auto rounded-lg border">
-                  <table className="w-full min-w-[1080px] border-collapse text-sm">
-                    <thead className="sticky top-0 z-10 bg-[#eef6f5] text-left">
+              <CardContent className="min-w-0 p-4 sm:p-5">
+                <div className="max-h-[560px] w-full max-w-full overflow-y-auto rounded-lg bg-secondary/20 sm:overflow-auto sm:border sm:bg-transparent">
+                  <div className="space-y-3 p-2 sm:hidden">
+                    {adjustedMortgageSchedule.map((row) => (
+                        <MortgageScheduleMobileCard
+                          key={row.installment}
+                          row={row}
+                          today={today}
+                          currency={home?.default_currency}
+                        />
+                    ))}
+                  </div>
+                  <table className="hidden w-full border-separate border-spacing-0 text-sm sm:table sm:min-w-[850px] sm:border-collapse">
+                    <thead className="sticky top-0 z-10 hidden bg-[#eef6f5] text-left sm:table-header-group">
                       <tr>
                         <th className="px-3 py-3 font-semibold">งวด</th>
                         <th className="px-3 py-3 font-semibold">วันที่</th>
-                        <th className="px-3 py-3 text-right font-semibold">
-                          อัตรา
-                        </th>
-                        <th className="px-3 py-3 text-right font-semibold">
-                          ยอดตามงวด
-                        </th>
                         <th className="px-3 py-3 text-right font-semibold">
                           จ่ายจริง
                         </th>
@@ -513,66 +609,112 @@ export default async function MortgagePage({
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y bg-white">
-                      {adjustedMortgageSchedule.map((row) => (
-                        <tr key={row.installment} className="hover:bg-secondary/20">
-                          <td className="whitespace-nowrap px-3 py-3 font-medium">
-                            {row.installment}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3">
-                            {formatDate(row.dueDate)}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
-                            {row.annualInterestRate}%
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
-                            {formatMoney(
-                              row.paymentMinor,
-                              home?.default_currency,
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
-                            {row.actualPaymentMinor == null
-                              ? "—"
-                              : formatMoney(
-                                  row.actualPaymentMinor,
+                    <tbody className="block space-y-3 p-2 sm:table-row-group sm:space-y-0 sm:divide-y sm:bg-white sm:p-0">
+                      {adjustedMortgageSchedule.map((row) => {
+                        const dueStatus = getMortgageDueRowStatus(
+                          row.dueDate,
+                          today,
+                        );
+                        return (
+                          <tr
+                            key={row.installment}
+                            className={`grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border p-4 sm:table-row sm:rounded-none sm:border-0 sm:p-0 ${
+                              dueStatus === "urgent"
+                                ? "bg-red-100 hover:bg-red-100"
+                                : dueStatus === "current-month"
+                                  ? "bg-amber-100 hover:bg-amber-100"
+                                  : "bg-white hover:bg-secondary/20"
+                            }`}
+                          >
+                            <td className="min-w-0 sm:whitespace-nowrap sm:px-3 sm:py-3 sm:font-medium">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                งวด
+                              </span>
+                              <span className="mt-0.5 block font-semibold">
+                                {row.installment}
+                              </span>
+                            </td>
+                            <td className="min-w-0 text-right sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-left">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                วันที่
+                              </span>
+                              <span className="mt-0.5 block font-medium">
+                                {formatDate(row.dueDate)}
+                              </span>
+                            </td>
+                            <td className="min-w-0 tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-right">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                จ่ายจริง
+                              </span>
+                              <span className="mt-0.5 block font-medium">
+                                {row.actualPaymentMinor == null
+                                  ? "—"
+                                  : formatMoney(
+                                      row.actualPaymentMinor,
+                                      home?.default_currency,
+                                    )}
+                              </span>
+                            </td>
+                            <td className="min-w-0 text-right tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                ยอดโป๊ะ
+                              </span>
+                              <span className="mt-0.5 block font-medium text-[#b84e40]">
+                                {row.extraPaymentMinor
+                                  ? formatMoney(
+                                      row.extraPaymentMinor,
+                                      home?.default_currency,
+                                    )
+                                  : "—"}
+                              </span>
+                            </td>
+                            <td className="min-w-0 tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-right">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                ดอกเบี้ย
+                              </span>
+                              <span className="mt-0.5 block font-medium text-[#9a6d10]">
+                                {formatMoney(
+                                  row.adjustedInterestMinor,
                                   home?.default_currency,
                                 )}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right font-medium tabular-nums text-[#b84e40]">
-                            {row.extraPaymentMinor
-                              ? formatMoney(
-                                  row.extraPaymentMinor,
+                              </span>
+                            </td>
+                            <td className="min-w-0 text-right tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                เงินต้น
+                              </span>
+                              <span className="mt-0.5 block font-medium text-primary">
+                                {formatMoney(
+                                  row.adjustedPrincipalMinor,
                                   home?.default_currency,
-                                )
-                              : "—"}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-[#9a6d10]">
-                            {formatMoney(
-                              row.adjustedInterestMinor,
-                              home?.default_currency,
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-primary">
-                            {formatMoney(
-                              row.adjustedPrincipalMinor,
-                              home?.default_currency,
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right font-medium tabular-nums">
-                            {formatMoney(
-                              row.balanceMinor,
-                              home?.default_currency,
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums text-primary">
-                            {formatMoney(
-                              row.adjustedBalanceMinor,
-                              home?.default_currency,
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                                )}
+                              </span>
+                            </td>
+                            <td className="min-w-0 tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-right">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                คงเหลือเดิม
+                              </span>
+                              <span className="mt-0.5 block font-medium">
+                                {formatMoney(
+                                  row.balanceMinor,
+                                  home?.default_currency,
+                                )}
+                              </span>
+                            </td>
+                            <td className="min-w-0 text-right tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                หลังโป๊ะ
+                              </span>
+                              <span className="mt-0.5 block font-semibold text-primary">
+                                {formatMoney(
+                                  row.adjustedBalanceMinor,
+                                  home?.default_currency,
+                                )}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -907,17 +1049,20 @@ export default async function MortgagePage({
             </Card>
 
             {!showInitialRatePlan ? (
-              <Card className="border-0 bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base">
+              <details
+                open
+                className="group overflow-hidden rounded-lg bg-white shadow-sm"
+              >
+                <summary className="cursor-pointer list-none border-b border-transparent p-6 group-open:border-border [&::-webkit-details-marker]:hidden">
+                  <span className="block text-base font-semibold leading-none">
                     เริ่มรอบดอกเบี้ยใหม่
-                  </CardTitle>
-                  <CardDescription>
+                  </span>
+                  <span className="mt-1.5 block text-sm text-muted-foreground">
                     ใช้เฉพาะเมื่อรีไฟแนนซ์หรือขอรีเทนชั่น
                     ไม่จำเป็นต้องเลือกหากใช้สัญญาเดิมต่อ
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                  </span>
+                </summary>
+                <CardContent className="pt-5">
                   {home && profile ? (
                     <form
                       action={createMortgageRateCycle}
@@ -987,24 +1132,35 @@ export default async function MortgagePage({
                     </p>
                   )}
                 </CardContent>
-              </Card>
+              </details>
             ) : null}
 
-            <Card className="border-0 bg-white shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">เพิ่มรายการชำระ</CardTitle>
-                <CardDescription>
+            <details
+              open
+              className="group overflow-hidden rounded-lg bg-white shadow-sm"
+            >
+              <summary className="cursor-pointer list-none border-b border-transparent p-6 group-open:border-border [&::-webkit-details-marker]:hidden">
+                <span className="block text-base font-semibold leading-none">
+                  เพิ่มรายการชำระ
+                </span>
+                <span className="mt-1.5 block text-sm text-muted-foreground">
                   ระบบใส่ยอดประมาณการของงวดถัดไปให้
                   และแก้เป็นยอดจริงจากธนาคารได้
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </span>
+              </summary>
+              <CardContent className="pt-5">
                 {home && profile ? (
                   <CreateMortgagePaymentForm
                     homeId={home.id}
                     profileId={profile.id}
                     currency={home.default_currency}
                     suggestion={nextScheduledPayment}
+                    futureSchedule={adjustedMortgageSchedule
+                      .slice(payments.length + 1)
+                      .map((row) => ({
+                        annualInterestRate: row.annualInterestRate,
+                        paymentMinor: row.paymentMinor,
+                      }))}
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -1012,7 +1168,7 @@ export default async function MortgagePage({
                   </p>
                 )}
               </CardContent>
-            </Card>
+            </details>
           </aside>
         </ResponsiveCreatePanel>
       </div>

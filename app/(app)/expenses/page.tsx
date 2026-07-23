@@ -438,7 +438,7 @@ export default async function ExpensesPage({
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1.5">
+                <div className="min-w-0 space-y-1.5">
                   <label
                     htmlFor="expense-filter-month"
                     className="text-xs font-medium"
@@ -449,8 +449,9 @@ export default async function ExpensesPage({
                     id="expense-filter-month"
                     name="month"
                     type="month"
+                    lang="en-GB"
                     defaultValue={month}
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    className="h-10 min-w-0 max-w-full rounded-md border bg-background px-3 text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">

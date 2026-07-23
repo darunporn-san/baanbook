@@ -36,6 +36,7 @@ export interface ButtonProps
     React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  pendingText?: React.ReactNode;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -48,6 +49,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       disabled,
       type,
+      pendingText = "กำลังทำงาน...",
       ...props
     },
     ref,
@@ -68,7 +70,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isPending ? (
           <>
             <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-            <span>กำลังทำงาน...</span>
+            <span>{pendingText}</span>
           </>
         ) : (
           children

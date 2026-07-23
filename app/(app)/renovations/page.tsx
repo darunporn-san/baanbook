@@ -1,5 +1,6 @@
 import { CalendarDays, Hammer, MapPin, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
@@ -270,20 +271,16 @@ export default async function RenovationsPage({
                             </label>
                             <label className="grid gap-2 text-sm font-medium">
                               วันที่เริ่ม
-                              <input
+                              <DateInput
                                 name="start_date"
-                                type="date"
                                 defaultValue={project.start_date ?? ""}
-                                className={fieldClass}
                               />
                             </label>
                             <label className="grid gap-2 text-sm font-medium">
                               วันที่สิ้นสุด
-                              <input
+                              <DateInput
                                 name="end_date"
-                                type="date"
                                 defaultValue={project.end_date ?? ""}
-                                className={fieldClass}
                               />
                             </label>
                             <label className="grid gap-2 text-sm font-medium sm:col-span-2">
@@ -398,15 +395,13 @@ export default async function RenovationsPage({
                 <div className="grid grid-cols-2 gap-3">
                   <label className="grid gap-2 text-sm font-medium">
                     วันที่เริ่ม
-                    <input
+                    <DateInput
                       name="start_date"
-                      type="date"
-                      className={fieldClass}
                     />
                   </label>
                   <label className="grid gap-2 text-sm font-medium">
                     วันที่สิ้นสุด
-                    <input name="end_date" type="date" className={fieldClass} />
+                    <DateInput name="end_date" />
                   </label>
                 </div>
                 <label className="grid gap-2 text-sm font-medium">

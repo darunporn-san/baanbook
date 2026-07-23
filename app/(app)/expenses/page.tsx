@@ -28,6 +28,10 @@ import {
   isAppointmentDueWithinDays,
 } from "@/lib/appointments";
 import { formatMoney } from "@/lib/format";
+import {
+  isInstallmentDone,
+  isInstallmentDueInMonth,
+} from "@/lib/installments";
 
 export default async function ExpensesPage({
   searchParams,
@@ -52,16 +56,33 @@ export default async function ExpensesPage({
     listAppliances(home?.id),
   ]);
   const now = new Date();
-  const currentMonth = new Intl.DateTimeFormat("en-CA", {
+  const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Bangkok",
     year: "numeric",
     month: "2-digit",
+    day: "2-digit",
   }).format(now);
-  const paidExpenses = expenses.filter((expense) => expense.is_paid);
-  const unpaidExpenses = expenses.filter((expense) => !expense.is_paid);
+  const currentMonth = today.slice(0, 7);
+  const isPaymentDone = (expense: (typeof expenses)[number]) =>
+    expense.installment_end_date
+      ? isInstallmentDone(expense.installment_end_date, today)
+      : expense.is_paid;
+  const paidExpenses = expenses.filter(isPaymentDone);
+  const unpaidExpenses = expenses.filter((expense) => !isPaymentDone(expense));
   const currentMonthExpenses = expenses.filter((expense) =>
     expense.expense_date.startsWith(currentMonth),
   );
+  const pendingThisMonthExpenses = expenses.filter((expense) => {
+    if (isPaymentDone(expense)) return false;
+
+    return expense.installment_amount_minor !== null
+      ? isInstallmentDueInMonth(
+          expense.installment_start_date,
+          expense.installment_end_date,
+          currentMonth,
+        )
+      : expense.expense_date.startsWith(currentMonth);
+  });
   const total = expenses.reduce(
     (sum, expense) => sum + expense.amount_minor,
     0,
@@ -78,22 +99,29 @@ export default async function ExpensesPage({
     (sum, expense) => sum + expense.amount_minor,
     0,
   );
+  const pendingThisMonthTotal = pendingThisMonthExpenses.reduce(
+    (sum, expense) =>
+      sum +
+      (expense.installment_amount_minor !== null
+        ? expense.installment_amount_minor
+        : expense.amount_minor),
+    0,
+  );
   const sortedExpenses = [...expenses].sort((a, b) => {
-    const aDone = isAppointmentDone(a, now);
-    const bDone = isAppointmentDone(b, now);
+    const aHasUpcomingAppointment =
+      Boolean(a.appointment_date) && !isAppointmentDone(a, now);
+    const bHasUpcomingAppointment =
+      Boolean(b.appointment_date) && !isAppointmentDone(b, now);
 
-    if (aDone !== bDone) return aDone ? 1 : -1;
-
-    const aAppointment = getAppointmentDateTime(a)?.getTime();
-    const bAppointment = getAppointmentDateTime(b)?.getTime();
-
-    if (aAppointment && !bAppointment) return -1;
-    if (!aAppointment && bAppointment) return 1;
-
-    if (aAppointment !== bAppointment) {
-      return aDone
-        ? (bAppointment ?? 0) - (aAppointment ?? 0)
-        : (aAppointment ?? 0) - (bAppointment ?? 0);
+    if (aHasUpcomingAppointment !== bHasUpcomingAppointment) {
+      return aHasUpcomingAppointment ? -1 : 1;
+    }
+    if (aHasUpcomingAppointment && bHasUpcomingAppointment) {
+      return (
+        (getAppointmentDateTime(a)?.getTime() ?? 0) -
+          (getAppointmentDateTime(b)?.getTime() ?? 0) ||
+        b.expense_date.localeCompare(a.expense_date)
+      );
     }
 
     return b.expense_date.localeCompare(a.expense_date);
@@ -146,7 +174,7 @@ export default async function ExpensesPage({
           .includes(normalizedSearch)) &&
       (!category || expense.category === category) &&
       matchesRoom(expense.room_id) &&
-      matchesPayment(expense.is_paid) &&
+      matchesPayment(isPaymentDone(expense)) &&
       (!month || expense.expense_date.startsWith(month)),
   );
   const applianceItems = allApplianceItems.filter(({ expense, appliance }) => {
@@ -166,7 +194,7 @@ export default async function ExpensesPage({
     return (
       (!normalizedSearch || searchableText.includes(normalizedSearch)) &&
       matchesRoom(itemRoomId) &&
-      matchesPayment(expense?.is_paid) &&
+      matchesPayment(expense ? isPaymentDone(expense) : undefined) &&
       (!month || itemDate?.startsWith(month))
     );
   });
@@ -226,7 +254,7 @@ export default async function ExpensesPage({
           hiddenFields={{ view: activeView }}
         />
       </section>
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-0 bg-white shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">จ่ายแล้ว</p>
@@ -256,6 +284,17 @@ export default async function ExpensesPage({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {unpaidExpenses.length} รายการ
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-[#e8f5f3] shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs text-primary">รอจ่ายของเดือนนี้</p>
+            <p className="mt-1 text-xl font-semibold text-primary">
+              {formatMoney(pendingThisMonthTotal, home?.default_currency)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {pendingThisMonthExpenses.length} รายการ
             </p>
           </CardContent>
         </Card>
@@ -466,9 +505,10 @@ export default async function ExpensesPage({
                           rooms={rooms}
                           appointmentDone={isAppointmentDone(expense, now)}
                           paymentUrgent={
-                            !expense.is_paid &&
+                            !isPaymentDone(expense) &&
                             isAppointmentDueWithinDays(expense, 3, now)
                           }
+                          paymentDone={isPaymentDone(expense)}
                           updateAction={updateExpense}
                           deleteAction={deleteExpense}
                         />
@@ -496,9 +536,12 @@ export default async function ExpensesPage({
                         }
                         paymentUrgent={
                           expense
-                            ? !expense.is_paid &&
+                            ? !isPaymentDone(expense) &&
                               isAppointmentDueWithinDays(expense, 3, now)
                             : false
+                        }
+                        paymentDone={
+                          expense ? isPaymentDone(expense) : undefined
                         }
                         updateAction={updateApplianceExpense}
                         deleteAction={deleteApplianceExpense}

@@ -5,6 +5,7 @@ import type { Appliance } from "@/features/appliances/queries";
 import type { MaintenanceTask } from "@/features/maintenance/queries";
 import type { Room } from "@/features/rooms/queries";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { formatDate } from "@/lib/format";
 import { commonText, getLabel, maintenanceStatusLabels, priorityLabels } from "@/lib/labels";
 
@@ -42,7 +43,7 @@ export function MaintenanceRow({
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
-        <input name="due_date" type="date" defaultValue={task.due_date ?? ""} className="h-9 rounded-md border bg-background px-3 text-sm" />
+        <DateInput name="due_date" defaultValue={task.due_date ?? ""} className="h-9" />
         <select name="room_id" defaultValue={task.room_id ?? ""} className="h-9 rounded-md border bg-background px-3 text-sm">
           <option value="">{commonText.noRoom}</option>
           {rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}

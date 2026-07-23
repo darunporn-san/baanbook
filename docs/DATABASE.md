@@ -91,6 +91,10 @@ Fields:
 - amount_minor
 - currency
 - expense_date
+- installment_months nullable
+- installment_amount_minor nullable
+- installment_start_date nullable
+- installment_end_date nullable
 - vendor_id nullable
 - payment_method
 - recurring_rule_id nullable

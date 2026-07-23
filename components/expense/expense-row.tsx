@@ -12,12 +12,14 @@ import { formatDate, formatMoney } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InstallmentFields } from "@/components/expense/installment-fields";
 
 export function ExpenseRow({
   expense,
   rooms,
   appointmentDone = false,
   paymentUrgent = false,
+  paymentDone,
   updateAction,
   deleteAction,
 }: {
@@ -25,10 +27,12 @@ export function ExpenseRow({
   rooms: Room[];
   appointmentDone?: boolean;
   paymentUrgent?: boolean;
+  paymentDone?: boolean;
   updateAction: (formData: FormData) => void;
   deleteAction: (formData: FormData) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const effectivePaymentDone = paymentDone ?? expense.is_paid;
   const roomName = rooms.find((room) => room.id === expense.room_id)?.name;
   const appointmentText = [
     expense.appointment_date ? formatDate(expense.appointment_date) : null,
@@ -93,6 +97,14 @@ export function ExpenseRow({
             />
           </div>
         </div>
+
+        <InstallmentFields
+          idPrefix={`expense-installment-${expense.id}`}
+          defaultMonths={expense.installment_months}
+          defaultAmountMinor={expense.installment_amount_minor}
+          defaultStartDate={expense.installment_start_date}
+          defaultEndDate={expense.installment_end_date}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
@@ -184,11 +196,13 @@ export function ExpenseRow({
           <Label htmlFor={`expense-notes-${expense.id}`}>
             รายละเอียดเพิ่มเติม
           </Label>
-          <Input
+          <textarea
             id={`expense-notes-${expense.id}`}
             name="notes"
             defaultValue={expense.notes ?? ""}
+            rows={3}
             placeholder="เช่น รายละเอียดงาน ใบเสนอราคา ผู้รับเหมา หรือเงื่อนไขการชำระ"
+            className="min-h-24 w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
 
@@ -223,14 +237,22 @@ export function ExpenseRow({
             </span>
             <span
               className={
-                expense.is_paid
+                effectivePaymentDone
                   ? "rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary"
+                  : expense.installment_end_date
+                    ? "rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]"
                   : paymentUrgent
                     ? "rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700"
                   : "rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]"
               }
             >
-              {expense.is_paid ? "จ่ายแล้ว" : "ยังไม่จ่าย"}
+              {expense.installment_end_date
+                ? effectivePaymentDone
+                  ? "Done"
+                  : `กำลังผ่อน · สิ้นสุด ${formatDate(expense.installment_end_date)}`
+                : effectivePaymentDone
+                  ? "จ่ายแล้ว"
+                  : "ยังไม่จ่าย"}
             </span>
             {appointmentText ? (
               appointmentDone ? (
@@ -249,6 +271,24 @@ export function ExpenseRow({
             <p className="mt-1 text-xl font-semibold text-primary">
               {formatMoney(expense.amount_minor, expense.currency)}
             </p>
+            {expense.installment_months &&
+            expense.installment_amount_minor !== null ? (
+              <p className="mt-1 text-sm font-medium text-[#705b2f]">
+                ผ่อน {expense.installment_months} เดือน · เดือนละ{" "}
+                {formatMoney(
+                  expense.installment_amount_minor,
+                  expense.currency,
+                )}
+                {expense.installment_start_date &&
+                expense.installment_end_date ? (
+                  <>
+                    {" "}
+                    · {formatDate(expense.installment_start_date)} –{" "}
+                    {formatDate(expense.installment_end_date)}
+                  </>
+                ) : null}
+              </p>
+            ) : null}
             {expense.notes ? (
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                 {expense.notes}

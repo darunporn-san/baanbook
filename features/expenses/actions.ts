@@ -4,10 +4,40 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getHome } from "@/features/homes/queries";
 import { addTimelineEvent } from "@/features/timeline/add-event";
+import { getInstallmentEndDate } from "@/lib/installments";
 import { createClient } from "@/lib/supabase/server";
 
 function expensesPath(homeId: string) {
   return homeId ? `/expenses?homeId=${homeId}` : "/expenses";
+}
+
+function installmentValues(formData: FormData) {
+  const rawMonths = String(formData.get("installment_months") ?? "").trim();
+  const rawAmount = String(formData.get("installment_amount") ?? "").trim();
+  const startDate =
+    String(formData.get("installment_start_date") ?? "").trim() || null;
+  const months = Number(rawMonths);
+  const amount = Number(rawAmount);
+  const endDate = getInstallmentEndDate(startDate, months);
+
+  return rawMonths &&
+    rawAmount &&
+    Number.isInteger(months) &&
+    months > 0 &&
+    Number.isFinite(amount) &&
+    amount >= 0
+    ? {
+        installment_months: months,
+        installment_amount_minor: Math.round(amount * 100),
+        installment_start_date: endDate ? startDate : null,
+        installment_end_date: endDate,
+      }
+    : {
+        installment_months: null,
+        installment_amount_minor: null,
+        installment_start_date: null,
+        installment_end_date: null,
+      };
 }
 
 export async function createExpense(formData: FormData) {
@@ -30,6 +60,7 @@ export async function createExpense(formData: FormData) {
   const appointmentTime =
     String(formData.get("appointment_time") ?? "").trim() || null;
   const isPaid = String(formData.get("is_paid") ?? "true") !== "false";
+  const installments = installmentValues(formData);
   const shouldCreateAppliance =
     String(formData.get("create_appliance") ?? "") === "1";
   const applianceName =
@@ -70,6 +101,7 @@ export async function createExpense(formData: FormData) {
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
       is_paid: isPaid,
+      ...installments,
     })
     .select("id")
     .single();
@@ -79,7 +111,11 @@ export async function createExpense(formData: FormData) {
     error?.message.includes("notes") ||
     error?.message.includes("appointment_date") ||
     error?.message.includes("appointment_time") ||
-    error?.message.includes("is_paid")
+    error?.message.includes("is_paid") ||
+    error?.message.includes("installment_months") ||
+    error?.message.includes("installment_amount_minor") ||
+    error?.message.includes("installment_start_date") ||
+    error?.message.includes("installment_end_date")
   ) {
     const fallback = await supabase
       .from("expenses")
@@ -142,7 +178,6 @@ export async function createExpense(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
   revalidatePath("/warranty");
-  redirect(expensesPath(home.id));
 }
 
 export async function updateExpense(formData: FormData) {
@@ -168,6 +203,7 @@ export async function updateExpense(formData: FormData) {
       appointment_time:
         String(formData.get("appointment_time") ?? "").trim() || null,
       is_paid: String(formData.get("is_paid") ?? "true") !== "false",
+      ...installmentValues(formData),
     })
     .eq("id", id);
 
@@ -175,7 +211,11 @@ export async function updateExpense(formData: FormData) {
     error?.message.includes("notes") ||
     error?.message.includes("appointment_date") ||
     error?.message.includes("appointment_time") ||
-    error?.message.includes("is_paid")
+    error?.message.includes("is_paid") ||
+    error?.message.includes("installment_months") ||
+    error?.message.includes("installment_amount_minor") ||
+    error?.message.includes("installment_start_date") ||
+    error?.message.includes("installment_end_date")
   ) {
     await supabase
       .from("expenses")
@@ -215,6 +255,7 @@ export async function updateApplianceExpense(formData: FormData) {
   const appointmentTime =
     String(formData.get("appointment_time") ?? "").trim() || null;
   const isPaid = String(formData.get("is_paid") ?? "true") !== "false";
+  const installments = installmentValues(formData);
   const warrantyType = String(formData.get("warranty_type") ?? "none");
   const warrantyLifetime = warrantyType === "lifetime";
   const warrantyEndDate =
@@ -236,6 +277,7 @@ export async function updateApplianceExpense(formData: FormData) {
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
       is_paid: isPaid,
+      ...installments,
     };
     const { error } = await supabase
       .from("expenses")
@@ -246,7 +288,11 @@ export async function updateApplianceExpense(formData: FormData) {
       error?.message.includes("notes") ||
       error?.message.includes("appointment_date") ||
       error?.message.includes("appointment_time") ||
-      error?.message.includes("is_paid")
+      error?.message.includes("is_paid") ||
+      error?.message.includes("installment_months") ||
+      error?.message.includes("installment_amount_minor") ||
+      error?.message.includes("installment_start_date") ||
+      error?.message.includes("installment_end_date")
     ) {
       await supabase
         .from("expenses")
@@ -280,6 +326,7 @@ export async function updateApplianceExpense(formData: FormData) {
         appointment_date: appointmentDate,
         appointment_time: appointmentTime,
         is_paid: isPaid,
+        ...installments,
       })
       .select("id")
       .single();

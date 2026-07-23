@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import { Label } from "@/components/ui/label";
 import {
@@ -225,23 +226,22 @@ export default async function MortgagePage({
                       <Label htmlFor="mortgage-start-date">
                         วันที่เริ่มสัญญา
                       </Label>
-                      <input
+                      <DateInput
                         id="mortgage-start-date"
                         name="start_date"
-                        type="date"
                         defaultValue={profile.start_date}
                         required
-                        className="h-10 rounded-md border bg-background px-3 text-sm"
                       />
                     </div>
                     <div className="grid gap-2 sm:col-span-2">
                       <Label htmlFor="mortgage-notes">บันทึก</Label>
-                      <input
+                      <textarea
                         id="mortgage-notes"
                         name="notes"
                         defaultValue={profile.notes ?? ""}
+                        rows={3}
                         placeholder="รายละเอียดเพิ่มเติม"
-                        className="h-10 rounded-md border bg-background px-3 text-sm"
+                        className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
                       />
                     </div>
                     <div className="flex justify-end border-t pt-4 sm:col-span-2">
@@ -430,12 +430,10 @@ export default async function MortgagePage({
                             name="home_id"
                             value={payment.home_id}
                           />
-                          <input
+                          <DateInput
                             name="payment_date"
-                            type="date"
                             defaultValue={payment.payment_date}
                             required
-                            className="h-10 rounded-md border bg-background px-3 text-sm"
                           />
                           <input
                             name="amount"
@@ -531,11 +529,9 @@ export default async function MortgagePage({
                     required
                     className="h-10 rounded-md border bg-background px-3 text-sm"
                   />
-                  <input
+                  <DateInput
                     name="start_date"
-                    type="date"
                     required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
                   />
                   <input
                     name="notes"
@@ -717,12 +713,10 @@ export default async function MortgagePage({
                       required
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     />
-                    <input
+                    <DateInput
                       name="start_date"
-                      type="date"
                       required
                       aria-label="วันที่เริ่มรอบใหม่"
-                      className="h-10 rounded-md border bg-background px-3 text-sm"
                     />
                     <input
                       name="annual_interest_rate"
@@ -774,11 +768,9 @@ export default async function MortgagePage({
                     name="mortgage_profile_id"
                     value={profile.id}
                   />
-                  <input
+                  <DateInput
                     name="payment_date"
-                    type="date"
                     required
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
                   />
                   <input
                     name="amount"

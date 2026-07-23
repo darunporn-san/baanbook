@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Appliance } from "@/features/appliances/queries";
 import type { Room } from "@/features/rooms/queries";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { formatDate } from "@/lib/format";
 import { commonText } from "@/lib/labels";
 
@@ -35,7 +36,7 @@ export function ApplianceRow({
           <option value="">{commonText.noRoom}</option>
           {rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}
         </select>
-        <input name="purchase_date" type="date" defaultValue={item.purchase_date ?? ""} className="h-9 rounded-md border bg-background px-3 text-sm" />
+        <DateInput name="purchase_date" defaultValue={item.purchase_date ?? ""} className="h-9" />
         <select
           name="warranty_type"
           defaultValue={item.warranty_lifetime ? "lifetime" : item.warranty_end_date ? "date" : "none"}
@@ -45,7 +46,7 @@ export function ApplianceRow({
           <option value="date">ระบุวันหมดประกัน</option>
           <option value="lifetime">ประกันตลอดชีพ</option>
         </select>
-        <input name="warranty_end_date" type="date" defaultValue={item.warranty_end_date ?? ""} className="h-9 rounded-md border bg-background px-3 text-sm" />
+        <DateInput name="warranty_end_date" defaultValue={item.warranty_end_date ?? ""} className="h-9" />
         <div className="flex gap-2">
           <Button size="sm">{commonText.save}</Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>{commonText.cancel}</Button>

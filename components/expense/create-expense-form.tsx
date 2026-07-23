@@ -5,6 +5,7 @@ import { expenseCategoryGroups } from "@/features/expenses/categories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InstallmentFields } from "@/components/expense/installment-fields";
 
 export function CreateExpenseForm({
   homeId,
@@ -47,7 +48,7 @@ export function CreateExpenseForm({
           required
         />
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="expense-amount">จำนวนเงิน</Label>
           <Input
@@ -69,7 +70,7 @@ export function CreateExpenseForm({
             defaultValue={new Date().toISOString().slice(0, 10)}
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 lg:col-span-2">
           <Label htmlFor="expense-payment-status">สถานะการจ่าย</Label>
           <select
             id="expense-payment-status"
@@ -82,6 +83,7 @@ export function CreateExpenseForm({
           </select>
         </div>
       </div>
+      <InstallmentFields idPrefix="expense-installment" />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="expense-category">หมวดหมู่</Label>
@@ -137,10 +139,12 @@ export function CreateExpenseForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor="expense-notes">รายละเอียดเพิ่มเติม</Label>
-        <Input
+        <textarea
           id="expense-notes"
           name="notes"
+          rows={3}
           placeholder="เช่น รายละเอียดงาน ใบเสนอราคา ผู้รับเหมา หรือเงื่อนไขการชำระ"
+          className="min-h-24 w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
       <details className="rounded-md border bg-secondary/20 p-3">
@@ -224,7 +228,9 @@ export function CreateExpenseForm({
           </div>
         </div>
       </details>
-      <Button type="submit">เพิ่มรายการ</Button>
+      <Button type="submit" pendingText="กำลังเพิ่มรายการ...">
+        เพิ่มรายการ
+      </Button>
     </form>
   );
 }

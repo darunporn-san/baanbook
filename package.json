@@ -12,6 +12,7 @@
     "phase3:check": "npm run check",
     "phase4:check": "npm run check",
     "start": "next start",
+    "test:installments": "node --no-warnings --experimental-strip-types lib/installments.test.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

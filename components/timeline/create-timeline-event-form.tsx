@@ -32,7 +32,13 @@ export function CreateTimelineEventForm({ homeId }: { homeId: string }) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="timeline-description">รายละเอียด</Label>
-        <Input id="timeline-description" name="description" placeholder="เช่น ช่างเข้าวัดพื้นที่ ติดตั้ง หรือซ่อมแซม" />
+        <textarea
+          id="timeline-description"
+          name="description"
+          placeholder="เช่น ช่างเข้าวัดพื้นที่ ติดตั้ง หรือซ่อมแซม"
+          rows={3}
+          className="min-h-24 w-full resize-y rounded-md border bg-background px-3 py-2 text-sm"
+        />
       </div>
       <Button type="submit">เพิ่มไทม์ไลน์</Button>
     </form>

@@ -42,7 +42,7 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
         )}
       >
         <span aria-hidden="true" className="truncate">
-          {formatDate(currentValue) || "DD/MM/YYYY"}
+          {formatDate(currentValue) || "DD/MM/พ.ศ."}
         </span>
         <CalendarDays
           className="ml-auto h-4 w-4 shrink-0 text-muted-foreground"

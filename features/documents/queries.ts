@@ -9,6 +9,7 @@ export type HomeDocument = {
   document_type: string;
   file_name: string | null;
   storage_path: string | null;
+  notes: string | null;
   created_at: string;
 };
 
@@ -18,7 +19,9 @@ export async function listDocuments(homeId?: string): Promise<HomeDocument[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("documents")
-    .select("id,home_id,room_id,title,document_type,file_name,storage_path,created_at")
+    .select(
+      "id,home_id,room_id,title,document_type,file_name,storage_path,notes,created_at",
+    )
     .eq("home_id", homeId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -28,4 +31,3 @@ export async function listDocuments(homeId?: string): Promise<HomeDocument[]> {
 
   return data ?? [];
 }
-

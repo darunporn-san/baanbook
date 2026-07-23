@@ -449,7 +449,7 @@ export default async function ExpensesPage({
                     id="expense-filter-month"
                     name="month"
                     type="month"
-                    lang="en-GB"
+                    lang="th"
                     defaultValue={month}
                     className="h-10 min-w-0 max-w-full rounded-md border bg-background px-3 text-sm"
                   />

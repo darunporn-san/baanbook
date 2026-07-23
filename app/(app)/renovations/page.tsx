@@ -297,10 +297,11 @@ export default async function RenovationsPage({
                             </label>
                             <label className="grid gap-2 text-sm font-medium sm:col-span-2">
                               บันทึก
-                              <input
+                              <textarea
                                 name="notes"
                                 defaultValue={project.notes ?? ""}
-                                className={fieldClass}
+                                rows={3}
+                                className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
                               />
                             </label>
                             <div className="flex items-end sm:col-span-2 lg:col-span-4 lg:justify-end">
@@ -420,7 +421,11 @@ export default async function RenovationsPage({
                   </div>
                   <label className="grid gap-2 text-sm font-medium">
                     บันทึก
-                    <input name="notes" className={fieldClass} />
+                    <textarea
+                      name="notes"
+                      rows={3}
+                      className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
+                    />
                   </label>
                   <Button type="submit" className="mt-1 w-full">
                     เพิ่มโปรเจกต์

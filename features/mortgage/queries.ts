@@ -32,7 +32,6 @@ export type MortgageYearlyTerm = {
   loan_year: number;
   annual_interest_rate: number;
   monthly_payment_minor: number | null;
-  strategy: "refinance" | "retention" | null;
   notes: string | null;
 };
 
@@ -96,7 +95,7 @@ export async function listMortgageYearlyTerms(
   const { data, error } = await supabase
     .from("mortgage_yearly_terms")
     .select(
-      "id,home_id,mortgage_profile_id,mortgage_rate_cycle_id,loan_year,annual_interest_rate,monthly_payment_minor,strategy,notes",
+      "id,home_id,mortgage_profile_id,mortgage_rate_cycle_id,loan_year,annual_interest_rate,monthly_payment_minor,notes",
     )
     .eq("mortgage_profile_id", profileId)
     .is("deleted_at", null)

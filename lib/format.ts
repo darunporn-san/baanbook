@@ -10,10 +10,11 @@ export function formatDate(value: string | null | undefined) {
 
   const [date] = value.split("T");
   const [year, month, day] = date.split("-");
+  const buddhistYear = Number(year) + 543;
 
-  if (!year || !month || !day) return value;
+  if (!year || !month || !day || !Number.isInteger(buddhistYear)) return value;
 
-  return `${day}/${month}/${year}`;
+  return `${day}/${month}/${buddhistYear}`;
 }
 
 export function formatDimension(value: number | null | undefined) {

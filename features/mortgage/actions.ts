@@ -253,26 +253,28 @@ export async function createInitialMortgageRatePlan(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("mortgage_profiles")
     .select("lender_name,start_date")
     .eq("id", profileId)
     .eq("home_id", homeId)
     .is("deleted_at", null)
     .maybeSingle();
+  if (profileError) redirect(path(homeId));
   if (!profile) redirect(path(homeId));
 
-  const { data: existingCycle } = await supabase
+  const { data: existingCycle, error: cycleLookupError } = await supabase
     .from("mortgage_rate_cycles")
     .select("id")
     .eq("mortgage_profile_id", profileId)
     .eq("cycle_number", 1)
     .is("deleted_at", null)
     .maybeSingle();
+  if (cycleLookupError) redirect(path(homeId));
   let cycleId = existingCycle?.id;
 
   if (!cycleId) {
-    const { data: cycle } = await supabase
+    const { data: cycle, error: cycleInsertError } = await supabase
       .from("mortgage_rate_cycles")
       .insert({
         home_id: homeId,
@@ -283,27 +285,30 @@ export async function createInitialMortgageRatePlan(formData: FormData) {
       })
       .select("id")
       .single();
+    if (cycleInsertError) redirect(path(homeId));
     cycleId = cycle?.id;
   }
 
   if (cycleId) {
-    const { data: existingTerms } = await supabase
+    const { data: existingTerms, error: termsLookupError } = await supabase
       .from("mortgage_yearly_terms")
       .select("id,monthly_payment_minor")
       .eq("mortgage_rate_cycle_id", cycleId)
       .is("deleted_at", null);
+    if (termsLookupError) redirect(path(homeId));
     if (existingTerms?.some((term) => term.monthly_payment_minor != null)) {
       redirect(path(homeId));
     }
     if (existingTerms?.length) {
-      await supabase
+      const { error } = await supabase
         .from("mortgage_yearly_terms")
         .update({ deleted_at: new Date().toISOString() })
         .eq("mortgage_rate_cycle_id", cycleId)
         .is("deleted_at", null);
+      if (error) redirect(path(homeId));
     }
 
-    await supabase.from("mortgage_yearly_terms").insert(
+    const { error } = await supabase.from("mortgage_yearly_terms").insert(
       terms.map((term) => ({
         home_id: homeId,
         mortgage_profile_id: profileId,
@@ -313,6 +318,9 @@ export async function createInitialMortgageRatePlan(formData: FormData) {
         monthly_payment_minor: term.monthlyPayment,
       })),
     );
+    if (error) redirect(path(homeId));
+  } else {
+    redirect(path(homeId));
   }
 
   revalidatePath("/mortgage");

@@ -519,10 +519,11 @@ export default async function PlanningPage({
                                 placeholder="ลิงก์สินค้า / ใบเสนอราคา"
                                 className={fieldClass}
                               />
-                              <input
+                              <textarea
                                 name="notes"
                                 placeholder="เงื่อนไข ประกัน หรือหมายเหตุ"
-                                className={fieldClass}
+                                rows={3}
+                                className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm sm:col-span-2"
                               />
                               <Button
                                 type="submit"
@@ -614,7 +615,11 @@ export default async function PlanningPage({
                   </label>
                   <label className="grid gap-2 text-sm font-medium">
                     หมายเหตุ
-                    <input name="notes" className={fieldClass} />
+                    <textarea
+                      name="notes"
+                      rows={3}
+                      className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
+                    />
                   </label>
                   <Button type="submit" className="mt-1 w-full">
                     สร้างแผน

@@ -32,7 +32,12 @@ export function CreateMaintenanceForm({
         <Label htmlFor="maintenance-title">งานที่ต้องทำ</Label>
         <Input id="maintenance-title" name="title" placeholder="ล้างแอร์" required />
       </div>
-      <Input name="description" placeholder="บันทึก" />
+      <textarea
+        name="description"
+        placeholder="บันทึก"
+        rows={3}
+        className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <select name="status" defaultValue="todo" className="h-10 rounded-md border bg-background px-3 text-sm">
           {Object.entries(maintenanceStatusLabels).map(([value, label]) => (

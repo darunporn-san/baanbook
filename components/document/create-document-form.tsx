@@ -52,7 +52,12 @@ export function CreateDocumentForm({
         </select>
       </div>
       <Input name="file" type="file" />
-      <Input name="notes" placeholder="บันทึก" />
+      <textarea
+        name="notes"
+        placeholder="บันทึก"
+        rows={3}
+        className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
+      />
       <Button type="submit">เพิ่มเอกสาร</Button>
     </form>
   );

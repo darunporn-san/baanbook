@@ -32,7 +32,13 @@ export function MaintenanceRow({
         <input type="hidden" name="id" value={task.id} />
         <input type="hidden" name="home_id" value={task.home_id} />
         <input name="title" defaultValue={task.title} className="h-9 rounded-md border bg-background px-3 text-sm" />
-        <input name="description" defaultValue={task.description ?? ""} placeholder="บันทึก" className="h-9 rounded-md border bg-background px-3 text-sm" />
+        <textarea
+          name="description"
+          defaultValue={task.description ?? ""}
+          placeholder="บันทึก"
+          rows={3}
+          className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm sm:col-span-2"
+        />
         <select name="status" defaultValue={task.status} className="h-9 rounded-md border bg-background px-3 text-sm">
           {Object.entries(maintenanceStatusLabels).map(([value, label]) => (
             <option key={value} value={value}>{label}</option>

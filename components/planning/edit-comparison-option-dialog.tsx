@@ -142,12 +142,13 @@ export function EditComparisonOptionDialog({
               className={fieldClass}
             />
           </label>
-          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground sm:col-span-2 lg:col-span-3">
             หมายเหตุ
-            <input
+            <textarea
               name="notes"
               defaultValue={option.notes ?? ""}
-              className={fieldClass}
+              rows={3}
+              className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm text-foreground"
             />
           </label>
           <div className="flex justify-end gap-2 border-t pt-4 sm:col-span-2 lg:col-span-3">

@@ -35,7 +35,13 @@ export function DocumentRow({
           <option value="">{commonText.noRoom}</option>
           {rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}
         </select>
-        <input name="notes" placeholder="บันทึก" className="h-9 rounded-md border bg-background px-3 text-sm" />
+        <textarea
+          name="notes"
+          defaultValue={document.notes ?? ""}
+          placeholder="บันทึก"
+          rows={3}
+          className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm sm:col-span-2"
+        />
         <div className="flex gap-2">
           <Button size="sm">{commonText.save}</Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>{commonText.cancel}</Button>

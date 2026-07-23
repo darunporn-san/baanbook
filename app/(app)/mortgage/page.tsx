@@ -1159,6 +1159,7 @@ export default async function MortgagePage({
                       .slice(payments.length + 1)
                       .map((row) => ({
                         annualInterestRate: row.annualInterestRate,
+                        dueDate: row.dueDate,
                         paymentMinor: row.paymentMinor,
                       }))}
                   />

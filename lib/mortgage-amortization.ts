@@ -79,6 +79,29 @@ export function calculateMortgageInterestSavings(
   );
 }
 
+export function calculateMortgagePayoffDate(
+  balanceMinor: number,
+  schedule: Pick<
+    MortgageScheduleRow,
+    "annualInterestRate" | "dueDate" | "paymentMinor"
+  >[],
+) {
+  let balance = balanceMinor;
+
+  for (const row of schedule) {
+    const interest = Math.round(
+      (balance * row.annualInterestRate) / 1200,
+    );
+    balance = Math.max(
+      0,
+      balance + interest - Math.min(row.paymentMinor, balance + interest),
+    );
+    if (balance === 0) return row.dueDate;
+  }
+
+  return null;
+}
+
 function addMonths(value: string, months: number) {
   const [year, month, day] = value.split("-").map(Number);
   const targetMonth = month - 1 + months;

@@ -7,6 +7,7 @@ import { createMortgagePayment } from "@/features/mortgage/actions";
 import { formatDate, formatMoney } from "@/lib/format";
 import {
   calculateMortgageInterestSavings,
+  calculateMortgagePayoffDate,
   type AdjustedMortgageScheduleRow,
   type MortgageScheduleRow,
 } from "@/lib/mortgage-amortization";
@@ -24,7 +25,7 @@ export function CreateMortgagePaymentForm({
   suggestion?: AdjustedMortgageScheduleRow;
   futureSchedule: Pick<
     MortgageScheduleRow,
-    "annualInterestRate" | "paymentMinor"
+    "annualInterestRate" | "dueDate" | "paymentMinor"
   >[];
 }) {
   const [mode, setMode] = useState<"scheduled" | "custom">(
@@ -59,6 +60,11 @@ export function CreateMortgagePaymentForm({
     extraMinor,
     futureSchedule,
   );
+  const projectedPayoffDate = suggestion
+    ? balanceAfterMinor === 0
+      ? suggestion.dueDate
+      : calculateMortgagePayoffDate(balanceAfterMinor, futureSchedule)
+    : null;
 
   return (
     <form action={createMortgagePayment} className="grid gap-4">
@@ -179,19 +185,31 @@ export function CreateMortgagePaymentForm({
               {formatMoney(extraMinor, currency)}
             </p>
           </div>
-          <div>
+          <div className="text-right">
             <p className="text-xs text-muted-foreground">คงเหลือหลังชำระ</p>
             <p className="mt-1 font-semibold text-primary">
               {formatMoney(balanceAfterMinor, currency)}
             </p>
           </div>
-          <div className="col-span-2 border-t pt-3">
-            <p className="text-xs text-muted-foreground">
-              ดอกเบี้ยลดลงโดยประมาณ
-            </p>
-            <p className="mt-1 font-semibold text-emerald-700">
-              {formatMoney(interestSavingsMinor, currency)}
-            </p>
+          <div className="col-span-2 grid grid-cols-2 gap-3 border-t pt-3">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                ดอกเบี้ยลดลงโดยประมาณ
+              </p>
+              <p className="mt-1 font-semibold text-emerald-700">
+                {formatMoney(interestSavingsMinor, currency)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">
+                คาดว่าจะผ่อนหมด
+              </p>
+              <p className="mt-1 font-semibold text-primary">
+                {projectedPayoffDate
+                  ? formatDate(projectedPayoffDate)
+                  : "ยังคำนวณไม่ได้"}
+              </p>
+            </div>
           </div>
         </div>
       ) : null}

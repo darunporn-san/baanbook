@@ -22,10 +22,7 @@ export default async function TimelinePage({
   const home = homes.find((item) => item.id === params?.homeId) ?? homes[0];
   const events = await listTimelineEvents(home?.id);
   const now = new Date();
-  const appointments = events.filter(
-    (event) => event.event_type === "appointment",
-  );
-  const appointmentDone = (event: (typeof events)[number]) =>
+  const eventDone = (event: (typeof events)[number]) =>
     isAppointmentDone(
       {
         appointment_date: event.event_date.slice(0, 10),
@@ -35,19 +32,15 @@ export default async function TimelinePage({
       },
       now,
     );
-  const pendingAppointments = appointments.filter(
-    (event) => !appointmentDone(event),
-  );
-  const completedAppointments = appointments.filter(appointmentDone);
+  const pendingEvents = events.filter((event) => !eventDone(event));
+  const completedEvents = events.filter(eventDone);
   const activeView =
     params?.view === "upcoming" || params?.view === "completed"
       ? params.view
       : "all";
   const visibleEvents = events.filter((event) => {
-    if (activeView === "upcoming")
-      return event.event_type === "appointment" && !appointmentDone(event);
-    if (activeView === "completed")
-      return event.event_type === "appointment" && appointmentDone(event);
+    if (activeView === "upcoming") return !eventDone(event);
+    if (activeView === "completed") return eventDone(event);
     return true;
   });
 
@@ -58,8 +51,7 @@ export default async function TimelinePage({
           <p className="text-sm font-medium text-white/70">กำหนดการของบ้าน</p>
           <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">ไทม์ไลน์</h1>
           <p className="mt-2 text-sm text-white/80">
-            วันที่ซื้อ นัดหมาย วันหมดประกัน และกำหนดซ่อมของ{" "}
-            {home?.name ?? "บ้านของคุณ"}
+            นัดหมายของ {home?.name ?? "บ้านของคุณ"}
           </p>
         </div>
         <HeaderHomeSwitcher
@@ -86,8 +78,8 @@ export default async function TimelinePage({
             >
               {[
                 ["all", "ทั้งหมด", events.length],
-                ["upcoming", "ยังไม่จบ", pendingAppointments.length],
-                ["completed", "จบแล้ว", completedAppointments.length],
+                ["upcoming", "ยังไม่จบ", pendingEvents.length],
+                ["completed", "จบแล้ว", completedEvents.length],
               ].map(([view, label, count]) => (
                 <Link
                   key={String(view)}
@@ -113,11 +105,7 @@ export default async function TimelinePage({
                 <TimelineEventRow
                   key={event.id}
                   event={event}
-                  appointmentDone={
-                    event.event_type === "appointment"
-                      ? appointmentDone(event)
-                      : undefined
-                  }
+                  done={eventDone(event)}
                 />
               ))
             ) : (
@@ -125,10 +113,10 @@ export default async function TimelinePage({
                 <p className="text-sm font-semibold">ยังไม่มีไทม์ไลน์</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {activeView === "upcoming"
-                    ? "ไม่มีนัดหมายที่ยังไม่จบสำหรับบ้านหลังนี้"
+                      ? "ไม่มีรายการที่ยังไม่จบสำหรับบ้านหลังนี้"
                     : activeView === "completed"
-                      ? "ยังไม่มีนัดหมายที่จบแล้ว"
-                      : "เพิ่มวันที่ซื้อ นัดหมาย วันหมดประกัน หรือกำหนดซ่อมจากหน้าที่เกี่ยวข้อง"}
+                      ? "ยังไม่มีรายการที่จบแล้ว"
+                      : "เพิ่มนัดหมายจากหน้าค่าใช้จ่าย"}
                 </p>
               </div>
             )}
@@ -139,8 +127,8 @@ export default async function TimelinePage({
           <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
             {[
               ["ไทม์ไลน์ทั้งหมด", events.length],
-              ["นัดหมายยังไม่จบ", pendingAppointments.length],
-              ["นัดหมายจบแล้ว", completedAppointments.length],
+              ["ยังไม่จบ", pendingEvents.length],
+              ["จบแล้ว", completedEvents.length],
             ].map(([label, count]) => (
               <div
                 key={String(label)}

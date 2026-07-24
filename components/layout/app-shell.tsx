@@ -43,7 +43,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-background"
+      onSubmitCapture={(event) => event.target.closest("dialog")?.close()}
+    >
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-30 flex w-60 -translate-x-full flex-col overflow-y-auto bg-[#246a78] px-3 py-4 text-white shadow-xl transition-[transform,width] md:translate-x-0",

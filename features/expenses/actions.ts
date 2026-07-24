@@ -11,6 +11,72 @@ function expensesPath(homeId: string) {
   return homeId ? `/expenses?homeId=${homeId}` : "/expenses";
 }
 
+export async function setExpenseBudget(formData: FormData) {
+  const homeId = String(formData.get("home_id") ?? "");
+  const amount = Number(String(formData.get("amount") ?? ""));
+  const home = await getHome(homeId);
+
+  if (!home || !Number.isFinite(amount) || amount <= 0) {
+    redirect(expensesPath(homeId));
+  }
+
+  const supabase = await createClient();
+  const amountMinor = Math.round(amount * 100);
+  const legacy = await supabase.from("expense_budgets").upsert(
+    {
+      home_id: home.id,
+      month_start: "1970-01-01",
+      amount_minor: amountMinor,
+    },
+    { onConflict: "home_id,month_start" },
+  );
+
+  if (legacy.error) {
+    await supabase.from("expense_budgets").upsert({
+      home_id: home.id,
+      amount_minor: amountMinor,
+    });
+  }
+
+  revalidatePath("/expenses");
+  redirect(expensesPath(home.id));
+}
+
+export async function addExpenseBudget(formData: FormData) {
+  const homeId = String(formData.get("home_id") ?? "");
+  const amount = Number(String(formData.get("amount") ?? ""));
+  const home = await getHome(homeId);
+
+  if (!home || !Number.isFinite(amount) || amount <= 0) {
+    redirect(expensesPath(homeId));
+  }
+
+  const supabase = await createClient();
+  const amountMinor = Math.round(amount * 100);
+  const legacy = await supabase
+    .from("expense_budgets")
+    .select("amount_minor")
+    .eq("home_id", home.id)
+    .eq("month_start", "1970-01-01")
+    .maybeSingle();
+
+  if (!legacy.error && legacy.data) {
+    await supabase
+      .from("expense_budgets")
+      .update({ amount_minor: legacy.data.amount_minor + amountMinor })
+      .eq("home_id", home.id)
+      .eq("month_start", "1970-01-01");
+  } else {
+    await supabase.rpc("add_expense_budget", {
+      p_home_id: home.id,
+      p_amount_minor: amountMinor,
+    });
+  }
+
+  revalidatePath("/expenses");
+  redirect(expensesPath(home.id));
+}
+
 function installmentValues(formData: FormData) {
   const rawMonths = String(formData.get("installment_months") ?? "").trim();
   const rawAmount = String(formData.get("installment_amount") ?? "").trim();

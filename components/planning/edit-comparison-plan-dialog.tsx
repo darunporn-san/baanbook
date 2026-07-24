@@ -83,20 +83,30 @@ export function EditComparisonPlanDialog({
               ))}
             </select>
           </label>
-          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
-            เมื่อยืนยันแล้วส่งไป
-            <select
-              name="destination_type"
-              defaultValue={plan.destination_type}
-              className={fieldClass}
-            >
-              <option value="shopping">รายการซื้อ — สินค้า/วัสดุ</option>
-              <option value="maintenance">
-                บำรุงรักษา — ติดตั้ง/ซ่อม/จ้างช่าง
-              </option>
-              <option value="renovation">รีโนเวท — งานปรับปรุง</option>
-            </select>
-          </label>
+          {plan.shopping_item_id ? (
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+              เมื่อยืนยันแล้วส่งไป
+              <input type="hidden" name="destination_type" value="shopping" />
+              <span className={`${fieldClass} flex items-center`}>
+                รายการซื้อเดิม
+              </span>
+            </label>
+          ) : (
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+              เมื่อยืนยันแล้วส่งไป
+              <select
+                name="destination_type"
+                defaultValue={plan.destination_type}
+                className={fieldClass}
+              >
+                <option value="shopping">รายการซื้อ — สินค้า/วัสดุ</option>
+                <option value="maintenance">
+                  บำรุงรักษา — ติดตั้ง/ซ่อม/จ้างช่าง
+                </option>
+                <option value="renovation">รีโนเวท — งานปรับปรุง</option>
+              </select>
+            </label>
+          )}
           <label className="grid gap-1.5 text-xs font-medium text-muted-foreground sm:col-span-2">
             หมายเหตุ
             <textarea

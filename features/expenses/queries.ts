@@ -126,3 +126,25 @@ export async function listExpenses(
 
   return data ?? [];
 }
+
+export async function getExpenseBudget(homeId?: string) {
+  if (!hasSupabaseEnv() || !homeId) return null;
+
+  const supabase = await createClient();
+  const legacy = await supabase
+    .from("expense_budgets")
+    .select("amount_minor")
+    .eq("home_id", homeId)
+    .eq("month_start", "1970-01-01")
+    .maybeSingle();
+
+  if (!legacy.error) return legacy.data?.amount_minor ?? null;
+
+  const { data } = await supabase
+    .from("expense_budgets")
+    .select("amount_minor")
+    .eq("home_id", homeId)
+    .maybeSingle();
+
+  return data?.amount_minor ?? null;
+}

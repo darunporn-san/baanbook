@@ -1,6 +1,7 @@
 import { CalendarDays, Hammer, MapPin, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
+import { EditDialog } from "@/components/ui/edit-dialog";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
@@ -142,7 +143,10 @@ export default async function RenovationsPage({
                 const room = rooms.find((item) => item.id === project.room_id);
 
                 return (
-                  <Card key={project.id} className="border-0 shadow-sm">
+                  <Card
+                    key={project.id}
+                    className="overflow-hidden border-0 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  >
                     <CardContent className="p-4 sm:p-5">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
@@ -202,19 +206,14 @@ export default async function RenovationsPage({
                         </div>
                       </div>
 
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-                        <details className="group/edit w-full sm:w-auto sm:flex-1">
-                          <summary className="cursor-pointer list-none text-sm font-medium text-primary marker:content-none">
-                            <span className="group-open/edit:hidden">
-                              แก้ไขข้อมูล
-                            </span>
-                            <span className="hidden group-open/edit:inline">
-                              ปิดแบบฟอร์ม
-                            </span>
-                          </summary>
+                      <div className="mt-4 flex items-center justify-end gap-2 border-t pt-4">
+                        <EditDialog
+                          title="แก้ไขโปรเจกต์"
+                          description={project.name}
+                        >
                           <form
                             action={updateRenovationProject}
-                            className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                            className="grid gap-4 sm:grid-cols-2"
                           >
                             <input type="hidden" name="id" value={project.id} />
                             <input
@@ -222,7 +221,7 @@ export default async function RenovationsPage({
                               name="home_id"
                               value={project.home_id}
                             />
-                            <label className="grid gap-2 text-sm font-medium sm:col-span-2">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground sm:col-span-2">
                               ชื่อโปรเจกต์
                               <input
                                 name="name"
@@ -231,7 +230,7 @@ export default async function RenovationsPage({
                                 className={fieldClass}
                               />
                             </label>
-                            <label className="grid gap-2 text-sm font-medium">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
                               ห้อง
                               <select
                                 name="room_id"
@@ -246,7 +245,7 @@ export default async function RenovationsPage({
                                 ))}
                               </select>
                             </label>
-                            <label className="grid gap-2 text-sm font-medium">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
                               สถานะ
                               <select
                                 name="status"
@@ -262,7 +261,7 @@ export default async function RenovationsPage({
                                 )}
                               </select>
                             </label>
-                            <label className="grid gap-2 text-sm font-medium sm:col-span-2">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
                               ผู้รับเหมา
                               <input
                                 name="contractor_name"
@@ -270,7 +269,7 @@ export default async function RenovationsPage({
                                 className={fieldClass}
                               />
                             </label>
-                            <label className="grid gap-2 text-sm font-medium sm:col-span-2">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
                               งบประมาณ
                               <input
                                 name="budget"
@@ -281,21 +280,21 @@ export default async function RenovationsPage({
                                 className={fieldClass}
                               />
                             </label>
-                            <label className="grid gap-2 text-sm font-medium">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
                               วันที่เริ่ม
                               <DateInput
                                 name="start_date"
                                 defaultValue={project.start_date ?? ""}
                               />
                             </label>
-                            <label className="grid gap-2 text-sm font-medium">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
                               วันที่สิ้นสุด
                               <DateInput
                                 name="end_date"
                                 defaultValue={project.end_date ?? ""}
                               />
                             </label>
-                            <label className="grid gap-2 text-sm font-medium sm:col-span-2">
+                            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground sm:col-span-2">
                               บันทึก
                               <textarea
                                 name="notes"
@@ -304,17 +303,16 @@ export default async function RenovationsPage({
                                 className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
                               />
                             </label>
-                            <div className="flex items-end sm:col-span-2 lg:col-span-4 lg:justify-end">
+                            <div className="flex justify-end border-t pt-4 sm:col-span-2">
                               <Button
                                 type="submit"
-                                size="sm"
-                                className="w-full lg:w-auto"
+                                pendingText="กำลังบันทึก..."
                               >
-                                {commonText.save}
+                                บันทึกการแก้ไข
                               </Button>
                             </div>
                           </form>
-                        </details>
+                        </EditDialog>
                         <form action={deleteRenovationProject}>
                           <input type="hidden" name="id" value={project.id} />
                           <input
@@ -322,7 +320,11 @@ export default async function RenovationsPage({
                             name="home_id"
                             value={project.home_id}
                           />
-                          <Button size="sm" variant="ghost">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:bg-destructive/10"
+                          >
                             {commonText.delete}
                           </Button>
                         </form>
@@ -427,7 +429,11 @@ export default async function RenovationsPage({
                       className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
                     />
                   </label>
-                  <Button type="submit" className="mt-1 w-full">
+                  <Button
+                    type="submit"
+                    className="mt-1 w-full"
+                    pendingText="กำลังเพิ่มโปรเจกต์..."
+                  >
                     เพิ่มโปรเจกต์
                   </Button>
                 </form>

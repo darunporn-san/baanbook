@@ -94,6 +94,56 @@ export async function createComparisonPlan(formData: FormData) {
   redirect(path(home.id));
 }
 
+export async function startShoppingComparison(formData: FormData) {
+  const homeId = String(formData.get("home_id") ?? "");
+  const itemId = String(formData.get("shopping_item_id") ?? "");
+  if (!homeId || !itemId) redirect("/shopping");
+
+  const supabase = await createClient();
+  const [{ data: item }, { data: existing }] = await Promise.all([
+    supabase
+      .from("shopping_items")
+      .select("id,room_id,title")
+      .eq("id", itemId)
+      .eq("home_id", homeId)
+      .eq("status", "planned")
+      .is("deleted_at", null)
+      .maybeSingle(),
+    supabase
+      .from("comparison_plans")
+      .select("id,status")
+      .eq("shopping_item_id", itemId)
+      .eq("home_id", homeId)
+      .is("deleted_at", null)
+      .maybeSingle(),
+  ]);
+  if (!item) redirect(`/shopping?homeId=${homeId}`);
+
+  if (existing) {
+    redirect(
+      `/planning?homeId=${homeId}&view=${
+        existing.status === "confirmed" ? "confirmed" : "comparing"
+      }#${existing.id}`,
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("comparison_plans")
+    .insert({
+      home_id: homeId,
+      room_id: item.room_id,
+      shopping_item_id: item.id,
+      title: item.title,
+      destination_type: "shopping",
+    })
+    .select("id")
+    .single();
+  if (error || !data) redirect(insertErrorPath(homeId, error?.code));
+
+  revalidatePath("/planning");
+  redirect(`/planning?homeId=${homeId}&view=comparing#${data.id}`);
+}
+
 export async function updateComparisonPlan(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const homeId = String(formData.get("home_id") ?? "");
@@ -110,6 +160,16 @@ export async function updateComparisonPlan(formData: FormData) {
 
   const supabase = await createClient();
   const roomId = String(formData.get("room_id") ?? "");
+  const { data: plan } = await supabase
+    .from("comparison_plans")
+    .select("shopping_item_id")
+    .eq("id", id)
+    .eq("home_id", homeId)
+    .eq("status", "comparing")
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!plan) redirect(path(homeId));
+
   if (roomId) {
     const { data: room } = await supabase
       .from("rooms")
@@ -126,7 +186,7 @@ export async function updateComparisonPlan(formData: FormData) {
     .update({
       title,
       room_id: roomId || null,
-      destination_type: destinationType,
+      destination_type: plan.shopping_item_id ? "shopping" : destinationType,
       notes: String(formData.get("notes") ?? "").trim() || null,
     })
     .eq("id", id)
@@ -247,7 +307,9 @@ export async function confirmComparisonOption(formData: FormData) {
   const [{ data: plan }, { data: option }] = await Promise.all([
     supabase
       .from("comparison_plans")
-      .select("id,home_id,room_id,title,destination_type,status,notes")
+      .select(
+        "id,home_id,room_id,shopping_item_id,title,destination_type,status,notes",
+      )
       .eq("id", planId)
       .eq("home_id", homeId)
       .is("deleted_at", null)
@@ -280,7 +342,23 @@ export async function confirmComparisonOption(formData: FormData) {
     .join(" · ");
   let destinationId: string | undefined;
 
-  if (plan.destination_type === "shopping") {
+  if (plan.destination_type === "shopping" && plan.shopping_item_id) {
+    const { data } = await supabase
+      .from("shopping_items")
+      .update({
+        room_id: plan.room_id,
+        title: option.item_name || plan.title,
+        actual_price_minor: total,
+        vendor: option.provider_name,
+        product_url: option.product_url,
+      })
+      .eq("id", plan.shopping_item_id)
+      .eq("home_id", homeId)
+      .is("deleted_at", null)
+      .select("id")
+      .maybeSingle();
+    destinationId = data?.id;
+  } else if (plan.destination_type === "shopping") {
     const { data } = await supabase
       .from("shopping_items")
       .insert({
@@ -290,6 +368,7 @@ export async function confirmComparisonOption(formData: FormData) {
         status: "planned",
         priority: "medium",
         estimated_price_minor: total,
+        actual_price_minor: total,
         vendor: option.provider_name,
         product_url: option.product_url,
         notes: detail || null,
@@ -354,7 +433,10 @@ export async function confirmComparisonOption(formData: FormData) {
     home_id: homeId,
     room_id: plan.room_id,
     event_type: event.eventType,
-    title: `${event.title}: ${plan.title}`,
+    title:
+      plan.shopping_item_id && destinationType === "shopping"
+        ? `เลือกร้านสำหรับ: ${plan.title}`
+        : `${event.title}: ${plan.title}`,
     source_type: event.sourceType,
     source_id: destinationId,
   });
@@ -366,20 +448,118 @@ export async function confirmComparisonOption(formData: FormData) {
   redirect(path(homeId));
 }
 
+export async function cancelComparisonConfirmation(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const homeId = String(formData.get("home_id") ?? "");
+  if (!id || !homeId) redirect(path(homeId));
+
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("comparison_plans")
+    .select(
+      "id,destination_type,destination_id,shopping_item_id,selected_option_id",
+    )
+    .eq("id", id)
+    .eq("home_id", homeId)
+    .eq("status", "confirmed")
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!plan) redirect(path(homeId));
+
+  if (plan.destination_type === "shopping" && plan.destination_id) {
+    const { data: item } = await supabase
+      .from("shopping_items")
+      .select("status")
+      .eq("id", plan.destination_id)
+      .eq("home_id", homeId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (item?.status === "bought") {
+      redirect(
+        path(
+          homeId,
+          "ยกเลิกการยืนยันไม่ได้ เพราะรายการนี้ถูกบันทึกว่าซื้อแล้ว",
+        ),
+      );
+    }
+  }
+
+  let destinationError = null;
+  if (plan.shopping_item_id) {
+    const result = await supabase
+      .from("shopping_items")
+      .update({ actual_price_minor: null, vendor: null })
+      .eq("id", plan.shopping_item_id)
+      .eq("home_id", homeId)
+      .eq("status", "planned");
+    destinationError = result.error;
+  } else if (plan.destination_id) {
+    const table =
+      plan.destination_type === "shopping"
+        ? "shopping_items"
+        : plan.destination_type === "maintenance"
+          ? "maintenance_tasks"
+          : "renovation_projects";
+    const result = await supabase
+      .from(table)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", plan.destination_id)
+      .eq("home_id", homeId);
+    destinationError = result.error;
+  }
+
+  if (destinationError) {
+    redirect(path(homeId, "ยกเลิกการยืนยันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"));
+  }
+
+  if (plan.selected_option_id) {
+    await supabase
+      .from("comparison_options")
+      .update({ is_selected: false })
+      .eq("id", plan.selected_option_id)
+      .eq("comparison_plan_id", plan.id);
+  }
+
+  const { error } = await supabase
+    .from("comparison_plans")
+    .update({
+      status: "comparing",
+      selected_option_id: null,
+      destination_id: null,
+      confirmed_at: null,
+    })
+    .eq("id", plan.id)
+    .eq("status", "confirmed");
+  if (error) {
+    redirect(path(homeId, "ยกเลิกการยืนยันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"));
+  }
+
+  const destinationType =
+    plan.destination_type as keyof typeof destinationRoutes;
+  revalidatePath("/planning");
+  revalidatePath(destinationRoutes[destinationType]);
+  revalidatePath("/dashboard");
+  revalidatePath("/timeline");
+  redirect(`/planning?homeId=${homeId}&view=comparing#${plan.id}`);
+}
+
 export async function deleteComparisonOption(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const homeId = String(formData.get("home_id") ?? "");
   if (!id) redirect(path(homeId));
 
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from("comparison_options")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
     .eq("home_id", homeId)
-    .eq("is_selected", false);
+    .eq("is_selected", false)
+    .is("deleted_at", null);
+  if (error) redirect(path(homeId, "ลบตัวเลือกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"));
+
   revalidatePath("/planning");
-  redirect(path(homeId));
 }
 
 export async function deleteComparisonPlan(formData: FormData) {
@@ -388,11 +568,13 @@ export async function deleteComparisonPlan(formData: FormData) {
   if (!id) redirect(path(homeId));
 
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from("comparison_plans")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("home_id", homeId);
+    .eq("home_id", homeId)
+    .is("deleted_at", null);
+  if (error) redirect(path(homeId, "ลบแผนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"));
+
   revalidatePath("/planning");
-  redirect(path(homeId));
 }

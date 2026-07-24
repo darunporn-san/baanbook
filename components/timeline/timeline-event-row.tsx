@@ -13,10 +13,10 @@ function eventTimeValue(value: string) {
 
 export function TimelineEventRow({
   event,
-  appointmentDone,
+  done,
 }: {
   event: TimelineEvent;
-  appointmentDone?: boolean;
+  done: boolean;
 }) {
   return (
     <div className="rounded-md border bg-white p-4 shadow-sm">
@@ -35,17 +35,15 @@ export function TimelineEventRow({
               {eventTimeValue(event.event_date)}
             </span>
           ) : null}
-          {appointmentDone != null ? (
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                appointmentDone
-                  ? "bg-secondary text-muted-foreground"
-                  : "bg-[#fff5d8] text-[#705b2f]"
-              }`}
-            >
-              {appointmentDone ? "จบแล้ว" : "ยังไม่จบ"}
-            </span>
-          ) : null}
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              done
+                ? "bg-secondary text-muted-foreground"
+                : "bg-[#fff5d8] text-[#705b2f]"
+            }`}
+          >
+            {done ? "จบแล้ว" : "ยังไม่จบ"}
+          </span>
         </div>
         <p className="mt-2 text-base font-semibold">
           {formatTimelineTitle(event.title)}

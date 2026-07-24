@@ -14,12 +14,14 @@ import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 import { listAppliances } from "@/features/appliances/queries";
 import {
+  addExpenseBudget,
   deleteApplianceExpense,
   deleteExpense,
+  setExpenseBudget,
   updateApplianceExpense,
   updateExpense,
 } from "@/features/expenses/actions";
-import { listExpenses } from "@/features/expenses/queries";
+import { getExpenseBudget, listExpenses } from "@/features/expenses/queries";
 import { expenseCategoryGroups } from "@/features/expenses/categories";
 import { listHomes } from "@/features/homes/queries";
 import { listRooms } from "@/features/rooms/queries";
@@ -48,11 +50,6 @@ export default async function ExpensesPage({
   const homes = await listHomes();
   const params = await searchParams;
   const home = homes.find((item) => item.id === params?.homeId) ?? homes[0];
-  const rooms = await listRooms(home?.id);
-  const [expenses, appliances] = await Promise.all([
-    listExpenses(home?.id, 500),
-    listAppliances(home?.id),
-  ]);
   const now = new Date();
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Bangkok",
@@ -61,6 +58,12 @@ export default async function ExpensesPage({
     day: "2-digit",
   }).format(now);
   const currentMonth = today.slice(0, 7);
+  const rooms = await listRooms(home?.id);
+  const [expenses, appliances, expenseBudget] = await Promise.all([
+    listExpenses(home?.id, 500),
+    listAppliances(home?.id),
+    getExpenseBudget(home?.id),
+  ]);
   const isPaymentDone = (expense: (typeof expenses)[number]) =>
     expense.installment_end_date
       ? isInstallmentDone(expense.installment_end_date, today)
@@ -97,6 +100,10 @@ export default async function ExpensesPage({
     (sum, expense) => sum + expense.amount_minor,
     0,
   );
+  const budgetRemaining = (expenseBudget ?? 0) - total;
+  const budgetPercent = expenseBudget
+    ? Math.round((total / expenseBudget) * 100)
+    : 0;
   const pendingThisMonthTotal = pendingThisMonthExpenses.reduce(
     (sum, expense) =>
       sum +
@@ -315,6 +322,135 @@ export default async function ExpensesPage({
           </CardContent>
         </Card>
       </section>
+      {home ? (
+        <Card className="overflow-hidden border-0 bg-white shadow-sm">
+          <CardHeader className="gap-4 space-y-0 border-b pb-4 sm:flex sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <CardTitle className="text-base">ภาพรวมงบประมาณ</CardTitle>
+              <CardDescription className="mt-1">
+                ติดตามวงเงินและค่าใช้จ่ายสะสมของบ้านหลังนี้
+              </CardDescription>
+            </div>
+            {expenseBudget !== null ? (
+              <form
+                action={addExpenseBudget}
+                className="flex w-full items-center gap-2 sm:w-auto"
+              >
+                <input type="hidden" name="home_id" value={home.id} />
+                <label
+                  htmlFor="add-expense-budget"
+                  className="whitespace-nowrap text-sm font-medium"
+                >
+                  เพิ่มวงเงิน
+                </label>
+                <input
+                  id="add-expense-budget"
+                  name="amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  placeholder="ระบุยอดที่ต้องการเพิ่ม"
+                  className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm sm:w-64"
+                />
+                <Button type="submit">+ เพิ่มงบ</Button>
+              </form>
+            ) : null}
+          </CardHeader>
+          <CardContent className="p-0">
+            {expenseBudget === null ? (
+              <div className="grid gap-4 p-5 sm:grid-cols-[1fr_360px] sm:items-end">
+                <div>
+                  <p className="font-medium">ยังไม่ได้ตั้งงบประมาณ</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    กำหนดวงเงินตั้งต้น แล้วเพิ่มยอดได้ภายหลัง
+                  </p>
+                </div>
+                <form
+                  action={setExpenseBudget}
+                  className="flex items-end gap-2"
+                >
+                  <input type="hidden" name="home_id" value={home.id} />
+                  <div className="flex-1 space-y-1.5">
+                    <label
+                      htmlFor="expense-budget"
+                      className="text-xs font-medium"
+                    >
+                      งบประมาณทั้งหมด
+                    </label>
+                    <input
+                      id="expense-budget"
+                      name="amount"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      required
+                      placeholder="เช่น 300000"
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    />
+                  </div>
+                  <Button type="submit">ตั้งงบ</Button>
+                </form>
+              </div>
+            ) : (
+              <>
+                <div className="grid divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                  <div className="p-5">
+                    <p className="text-xs text-muted-foreground">
+                      งบประมาณทั้งหมด
+                    </p>
+                    <p className="mt-1 text-xl font-semibold">
+                      {formatMoney(expenseBudget, home.default_currency)}
+                    </p>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-xs text-muted-foreground">ใช้ไปแล้ว</p>
+                    <p className="mt-1 text-xl font-semibold text-[#514227]">
+                      {formatMoney(total, home.default_currency)}
+                    </p>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-xs text-muted-foreground">
+                      {budgetRemaining >= 0 ? "คงเหลือ" : "เกินงบ"}
+                    </p>
+                    <p
+                      className={`mt-1 text-xl font-semibold ${
+                        budgetRemaining < 0 ? "text-red-700" : "text-primary"
+                      }`}
+                    >
+                      {formatMoney(
+                        Math.abs(budgetRemaining),
+                        home.default_currency,
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="px-5 pb-5">
+                  <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                    <span>การใช้งบประมาณ</span>
+                    <span>{budgetPercent}%</span>
+                  </div>
+                  <div
+                    className="h-2.5 overflow-hidden rounded-full bg-secondary"
+                    role="progressbar"
+                    aria-label="งบประมาณที่ใช้ไป"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.min(budgetPercent, 100)}
+                  >
+                    <div
+                      className={`h-full rounded-full ${
+                        budgetPercent > 100 ? "bg-red-600" : "bg-primary"
+                      }`}
+                      style={{ width: `${Math.min(budgetPercent, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="grid min-w-0 gap-4">
           <Card className="border-0 bg-white shadow-sm">

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
-import { LoaderCircle, Plus, X } from "lucide-react";
+import { useRef, type ReactNode } from "react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type MobileCreateDialogProps = {
@@ -99,37 +99,15 @@ export function ResponsiveCreatePanel({
   title: string;
   children: ReactNode;
 }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const loading = isSubmitting ? (
-    <div
-      role="status"
-      className="absolute inset-0 z-20 flex items-center justify-center bg-white/95"
-    >
-      <div className="text-center">
-        <LoaderCircle
-          className="mx-auto h-7 w-7 animate-spin text-primary"
-          aria-hidden="true"
-        />
-        <p className="mt-3 text-sm font-semibold">กำลังบันทึกข้อมูล</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          กรุณารอสักครู่...
-        </p>
-      </div>
-    </div>
-  ) : null;
-
   return (
     <>
       <dialog
         id={dialogId}
         className="relative mx-auto mb-3 mt-auto max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-lg overflow-hidden rounded-2xl border border-white/70 bg-white p-0 text-foreground shadow-2xl backdrop:bg-slate-950/35 backdrop:backdrop-blur-sm sm:m-auto lg:hidden"
-        onSubmitCapture={() => setIsSubmitting(true)}
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close();
         }}
       >
-        {loading}
         <div className="flex items-center justify-between border-b border-slate-100 bg-white p-3">
           <h2 className="font-semibold">{title}</h2>
           <Button
@@ -146,13 +124,7 @@ export function ResponsiveCreatePanel({
           {children}
         </div>
       </dialog>
-      <div
-        className="relative hidden lg:block"
-        onSubmitCapture={() => setIsSubmitting(true)}
-      >
-        {loading}
-        {children}
-      </div>
+      <div className="relative hidden lg:block">{children}</div>
     </>
   );
 }

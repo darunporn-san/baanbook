@@ -5,6 +5,7 @@ import {
   ResponsiveCreatePanel,
 } from "@/components/ui/mobile-create-dialog";
 import { EditShoppingItemDialog } from "@/components/shopping/edit-shopping-item-dialog";
+import { MarkShoppingBoughtDialog } from "@/components/shopping/mark-shopping-bought-dialog";
 import {
   Card,
   CardContent,
@@ -13,13 +14,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { listHomes } from "@/features/homes/queries";
+import { startShoppingComparison } from "@/features/planning/actions";
 import { listRenovationProjects } from "@/features/renovations/queries";
 import { listRooms } from "@/features/rooms/queries";
 import {
   createShoppingItem,
   deleteShoppingItem,
 } from "@/features/shopping/actions";
-import { listShoppingItems } from "@/features/shopping/queries";
+import {
+  listShoppingItems,
+  listShoppingItemsAwaitingSelection,
+} from "@/features/shopping/queries";
 import { formatMoney } from "@/lib/format";
 import {
   commonText,
@@ -36,11 +41,13 @@ export default async function ShoppingPage({
   const homes = await listHomes();
   const params = await searchParams;
   const home = homes.find((item) => item.id === params?.homeId) ?? homes[0];
-  const [rooms, projects, items] = await Promise.all([
+  const [rooms, projects, items, itemsAwaitingSelection] = await Promise.all([
     listRooms(home?.id),
     listRenovationProjects(home?.id),
     listShoppingItems(home?.id),
+    listShoppingItemsAwaitingSelection(home?.id),
   ]);
+  const awaitingSelection = new Set(itemsAwaitingSelection);
   const planned = items.filter((item) => item.status === "planned");
   const bought = items.filter((item) => item.status === "bought");
   const cancelled = items.filter((item) => item.status === "cancelled");
@@ -48,7 +55,7 @@ export default async function ShoppingPage({
     (sum, item) => sum + (item.estimated_price_minor ?? 0),
     0,
   );
-  const actual = items.reduce(
+  const actual = bought.reduce(
     (sum, item) => sum + (item.actual_price_minor ?? 0),
     0,
   );
@@ -155,7 +162,8 @@ export default async function ShoppingPage({
                 items.map((item) => (
                   <div
                     key={item.id}
-                    className={`overflow-hidden rounded-lg border bg-white ${
+                    id={item.id}
+                    className={`scroll-mt-20 overflow-hidden rounded-lg border bg-white ${
                       item.status === "bought"
                         ? "border-l-4 border-l-[#ff806f]"
                         : item.status === "cancelled"
@@ -189,14 +197,32 @@ export default async function ShoppingPage({
                           </span>
                         </div>
                         <h2 className="mt-3 font-semibold">{item.title}</h2>
-                        <p className="mt-1 text-xl font-semibold text-primary">
-                          {formatMoney(
-                            item.actual_price_minor ??
-                              item.estimated_price_minor ??
-                              0,
-                            home?.default_currency,
-                          )}
-                        </p>
+                        <div className="mt-2 flex flex-wrap gap-x-8 gap-y-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              ราคาประเมิน
+                            </p>
+                            <p className="mt-0.5 font-semibold text-primary">
+                              {formatMoney(
+                                item.estimated_price_minor ?? 0,
+                                home?.default_currency,
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              ราคาจริง
+                            </p>
+                            <p className="mt-0.5 font-semibold text-[#b94d40]">
+                              {item.actual_price_minor === null
+                                ? "ยังไม่ระบุ"
+                                : formatMoney(
+                                    item.actual_price_minor,
+                                    home?.default_currency,
+                                  )}
+                            </p>
+                          </div>
+                        </div>
                         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           {item.vendor ? (
                             <span>ร้าน: {item.vendor}</span>
@@ -224,7 +250,30 @@ export default async function ShoppingPage({
                           </p>
                         ) : null}
                       </div>
-                      <div className="flex shrink-0 items-center gap-1">
+                      <div className="flex shrink-0 flex-wrap items-start justify-end gap-1">
+                        {item.status === "planned" ? (
+                          <>
+                            {!awaitingSelection.has(item.id) ? (
+                              <MarkShoppingBoughtDialog
+                                item={item}
+                                currency={home?.default_currency}
+                              />
+                            ) : null}
+                            <form action={startShoppingComparison}>
+                              <input
+                                type="hidden"
+                                name="shopping_item_id"
+                                value={item.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="home_id"
+                                value={item.home_id}
+                              />
+                              <Button size="sm">เปรียบเทียบร้าน</Button>
+                            </form>
+                          </>
+                        ) : null}
                         <EditShoppingItemDialog
                           item={item}
                           rooms={rooms}
@@ -268,7 +317,7 @@ export default async function ShoppingPage({
                 ผูกกับห้องหรือโปรเจกต์รีโนเวทเมื่อจำเป็น
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-5">
               {home ? (
                 <form action={createShoppingItem} className="grid gap-4">
                   <input type="hidden" name="home_id" value={home.id} />
@@ -281,38 +330,19 @@ export default async function ShoppingPage({
                       className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
                     />
                   </label>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="grid gap-1.5 text-xs font-medium">
-                      สถานะ
-                      <select
-                        name="status"
-                        className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
-                      >
-                        {Object.entries(shoppingStatusLabels).map(
-                          ([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </label>
-                    <label className="grid gap-1.5 text-xs font-medium">
-                      ความสำคัญ
-                      <select
-                        name="priority"
-                        className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
-                      >
-                        {Object.entries(priorityLabels).map(
-                          ([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </label>
-                  </div>
+                  <label className="grid gap-1.5 text-xs font-medium">
+                    ความสำคัญ
+                    <select
+                      name="priority"
+                      className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
+                    >
+                      {Object.entries(priorityLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                     <label className="grid gap-1.5 text-xs font-medium">
                       ห้อง
@@ -343,30 +373,17 @@ export default async function ShoppingPage({
                       </select>
                     </label>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="grid gap-1.5 text-xs font-medium">
-                      ราคาประเมิน
-                      <input
-                        name="estimated_price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        className="h-10 min-w-0 rounded-md border bg-background px-3 text-sm font-normal"
-                      />
-                    </label>
-                    <label className="grid gap-1.5 text-xs font-medium">
-                      ราคาจริง
-                      <input
-                        name="actual_price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        className="h-10 min-w-0 rounded-md border bg-background px-3 text-sm font-normal"
-                      />
-                    </label>
-                  </div>
+                  <label className="grid gap-1.5 text-xs font-medium">
+                    ราคาประเมิน
+                    <input
+                      name="estimated_price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      className="h-10 min-w-0 rounded-md border bg-background px-3 text-sm font-normal"
+                    />
+                  </label>
                   <label className="grid gap-1.5 text-xs font-medium">
                     ร้านหรือผู้ขาย
                     <input

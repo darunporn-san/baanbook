@@ -31,3 +31,20 @@ export async function listShoppingItems(homeId?: string): Promise<ShoppingItem[]
 
   return data ?? [];
 }
+
+export async function listShoppingItemsAwaitingSelection(homeId?: string) {
+  if (!hasSupabaseEnv() || !homeId) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("comparison_plans")
+    .select("shopping_item_id")
+    .eq("home_id", homeId)
+    .eq("status", "comparing")
+    .is("deleted_at", null)
+    .not("shopping_item_id", "is", null);
+
+  if (error) return [];
+
+  return data.map((plan) => plan.shopping_item_id as string);
+}

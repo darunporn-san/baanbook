@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { listHomes } from "@/features/homes/queries";
 import {
+  cancelComparisonConfirmation,
   confirmComparisonOption,
   createComparisonOption,
   createComparisonPlan,
@@ -172,7 +173,8 @@ export default async function PlanningPage({
                 return (
                   <Card
                     key={plan.id}
-                    className="relative overflow-hidden border-0 shadow-sm"
+                    id={plan.id}
+                    className="relative scroll-mt-20 overflow-hidden border-0 shadow-sm"
                   >
                     <div className="absolute right-5 top-5 z-10 flex items-center gap-1 rounded-lg border bg-white/80 p-1 shadow-sm backdrop-blur-sm">
                       {plan.status === "comparing" ? (
@@ -180,7 +182,19 @@ export default async function PlanningPage({
                           plan={plan}
                           rooms={rooms.map(({ id, name }) => ({ id, name }))}
                         />
-                      ) : null}
+                      ) : (
+                        <form action={cancelComparisonConfirmation}>
+                          <input type="hidden" name="id" value={plan.id} />
+                          <input
+                            type="hidden"
+                            name="home_id"
+                            value={plan.home_id}
+                          />
+                          <Button size="sm" variant="outline">
+                            ยกเลิกการยืนยัน
+                          </Button>
+                        </form>
+                      )}
                       <form action={deleteComparisonPlan}>
                         <input type="hidden" name="id" value={plan.id} />
                         <input
@@ -210,6 +224,7 @@ export default async function PlanningPage({
                           <span className="text-xs text-muted-foreground">
                             ส่งไป {destinationLabels[plan.destination_type]} ·{" "}
                             {plan.options.length} ตัวเลือก
+                            {plan.shopping_item_id ? " · จากรายการซื้อ" : ""}
                           </span>
                         </div>
                         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -537,7 +552,7 @@ export default async function PlanningPage({
                         ) : plan.destination_id ? (
                           <Button asChild className="w-full sm:w-auto">
                             <Link
-                              href={`${destinationRoutes[plan.destination_type]}?homeId=${plan.home_id}`}
+                              href={`${destinationRoutes[plan.destination_type]}?homeId=${plan.home_id}#${plan.destination_id}`}
                             >
                               เปิดใน {destinationLabels[plan.destination_type]}
                             </Link>

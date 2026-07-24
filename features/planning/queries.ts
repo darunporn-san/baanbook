@@ -23,6 +23,7 @@ export type ComparisonPlan = {
   id: string;
   home_id: string;
   room_id: string | null;
+  shopping_item_id: string | null;
   title: string;
   destination_type: "shopping" | "maintenance" | "renovation";
   status: "comparing" | "confirmed";
@@ -42,13 +43,37 @@ export async function listComparisonPlans(
   const { data: plans, error } = await supabase
     .from("comparison_plans")
     .select(
-      "id,home_id,room_id,title,destination_type,status,notes,selected_option_id,destination_id,confirmed_at",
+      "id,home_id,room_id,shopping_item_id,title,destination_type,status,notes,selected_option_id,destination_id,confirmed_at",
     )
     .eq("home_id", homeId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error || !plans?.length) return [];
+
+  const shoppingItemIds = [
+    ...new Set(
+      plans
+        .map((plan) => plan.shopping_item_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const { data: activeShoppingItems } = shoppingItemIds.length
+    ? await supabase
+        .from("shopping_items")
+        .select("id")
+        .in("id", shoppingItemIds)
+        .is("deleted_at", null)
+    : { data: [] };
+  const activeShoppingItemIds = new Set(
+    (activeShoppingItems ?? []).map((item) => item.id),
+  );
+  const activePlans = plans.filter(
+    (plan) =>
+      !plan.shopping_item_id ||
+      activeShoppingItemIds.has(plan.shopping_item_id),
+  );
+  if (!activePlans.length) return [];
 
   const { data: options } = await supabase
     .from("comparison_options")
@@ -57,12 +82,12 @@ export async function listComparisonPlans(
     )
     .in(
       "comparison_plan_id",
-      plans.map((plan) => plan.id),
+      activePlans.map((plan) => plan.id),
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
-  return plans.map((plan) => ({
+  return activePlans.map((plan) => ({
     ...plan,
     options: (options ?? []).filter(
       (option) => option.comparison_plan_id === plan.id,

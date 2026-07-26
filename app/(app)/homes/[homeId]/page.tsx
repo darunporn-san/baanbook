@@ -39,22 +39,26 @@ export default async function HomeDetailPage({
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <section className="relative rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6">
-        <Button asChild size="sm" variant="secondary" className="mb-4">
-          <Link href="/homes">กลับไปหน้าบ้าน</Link>
-        </Button>
-        <p className="text-sm font-medium text-white/75">จัดการห้องภายในบ้าน</p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">{home.name}</h1>
-        <p className="mt-2 text-sm text-white/80">
-          {getLabel(homeTypeLabels, home.home_type) || "บ้าน"} · {rooms.length}{" "}
-          ห้อง · {home.timezone}
-        </p>
-        <MobileCreateDialog
-          title="เพิ่มห้อง"
-          description="สร้างห้องสำหรับบ้านหลังนี้"
-          triggerLabel="เพิ่มห้อง"
-        >
-          <CreateRoomForm homeId={home.id} />
-        </MobileCreateDialog>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <Button asChild size="sm" variant="secondary" className="mb-4">
+              <Link href="/homes">กลับไปหน้าบ้าน</Link>
+            </Button>
+            <p className="text-sm font-medium text-white/75">จัดการห้องภายในบ้าน</p>
+            <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">{home.name}</h1>
+            <p className="mt-2 text-sm text-white/80">
+              {getLabel(homeTypeLabels, home.home_type) || "บ้าน"} · {rooms.length}{" "}
+              ห้อง · {home.timezone}
+            </p>
+          </div>
+          <MobileCreateDialog
+            title="เพิ่มห้อง"
+            description="สร้างห้องสำหรับบ้านหลังนี้"
+            triggerLabel="เพิ่มห้อง"
+          >
+            <CreateRoomForm homeId={home.id} />
+          </MobileCreateDialog>
+        </div>
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">

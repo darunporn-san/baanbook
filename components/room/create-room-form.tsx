@@ -14,7 +14,7 @@ export function CreateRoomForm({ homeId }: { homeId: string }) {
       <div className="grid gap-3">
         <Input name="floor" placeholder="ชั้น" />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="room-width">กว้าง (ม.)</Label>
           <Input id="room-width" name="width_m" type="number" step="0.01" min="0" placeholder="3.00" />

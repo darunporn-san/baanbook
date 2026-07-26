@@ -60,7 +60,7 @@ export function RoomRow({
 
           <div className="grid gap-3">
             <p className="text-xs font-semibold uppercase text-muted-foreground">ขนาดห้อง</p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor={`room-width-${room.id}`}>กว้าง (ม.)</Label>
                 <Input id={`room-width-${room.id}`} name="width_m" type="number" step="0.01" min="0" defaultValue={room.width_m ?? ""} />
@@ -141,7 +141,7 @@ export function RoomRow({
                 <p className="text-sm font-semibold">ขนาดช่องเปิด</p>
                 <p className="text-xs text-muted-foreground">หน้าต่าง ประตู ระเบียง และขนาดจริงสำหรับวางแผนรีโนเวท</p>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <div className="rounded-md bg-white px-3 py-2 text-center shadow-sm">
                   <p className="text-base font-semibold">{room.window_count}</p>
                   <p className="text-[11px] uppercase text-muted-foreground">หน้าต่าง</p>
@@ -161,7 +161,7 @@ export function RoomRow({
               </div>
             </div>
 
-            <div className="grid gap-4 p-4 md:grid-cols-1 lg:grid-cols-[1fr_320px]">
+            <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
               <div className="grid content-start gap-2">
                 {room.openings.length ? (
                   room.openings.map((opening) => (
@@ -170,7 +170,7 @@ export function RoomRow({
                         <input type="hidden" name="id" value={opening.id} />
                         <input type="hidden" name="home_id" value={room.home_id} />
                         <input type="hidden" name="room_id" value={room.id} />
-                        <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-[150px_1fr]">
+                        <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-[150px_1fr]">
                           <div className="space-y-1">
                             <Label htmlFor={`edit-opening-type-${opening.id}`}>ประเภท</Label>
                             <select
@@ -189,7 +189,7 @@ export function RoomRow({
                             <Input id={`edit-opening-label-${opening.id}`} name="label" defaultValue={opening.label ?? ""} />
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                           <div className="space-y-1">
                             <Label htmlFor={`edit-opening-width-${opening.id}`}>กว้าง</Label>
                             <Input id={`edit-opening-width-${opening.id}`} name="width_m" type="number" step="0.01" min="0" defaultValue={opening.width_m ?? ""} />
@@ -209,8 +209,8 @@ export function RoomRow({
                         </div>
                       </form>
                     ) : (
-                      <div key={opening.id} className="grid gap-3 rounded-md border bg-white p-3 shadow-sm sm:grid-cols-1 md:grid-cols-[1fr_auto] md:items-center">
-                        <div className="grid gap-2 sm:grid-cols-1 md:grid-cols-[140px_1fr_90px] md:items-center">
+                      <div key={opening.id} className="grid gap-3 rounded-md border bg-white p-3 shadow-sm sm:grid-cols-1 lg:grid-cols-[1fr_auto] lg:items-center">
+                        <div className="grid gap-2 sm:grid-cols-1 lg:grid-cols-[140px_1fr_90px] lg:items-center">
                           <div>
                             <p className="text-sm font-semibold">{opening.label || openingTypeLabels[opening.opening_type]}</p>
                             <p className="text-xs text-muted-foreground">{openingTypeLabels[opening.opening_type]}</p>
@@ -272,7 +272,7 @@ export function RoomRow({
                     <Input id={`opening-label-${room.id}`} name="label" placeholder="หน้าต่าง 1" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                   <div className="space-y-1">
                     <Label htmlFor={`opening-width-${room.id}`}>กว้าง</Label>
                     <Input id={`opening-width-${room.id}`} name="width_m" type="number" step="0.01" min="0" placeholder="1.20" />

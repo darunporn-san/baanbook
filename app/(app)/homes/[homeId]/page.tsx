@@ -51,11 +51,12 @@ export default async function HomeDetailPage({
         <MobileCreateDialog
           title="เพิ่มห้อง"
           description="สร้างห้องสำหรับบ้านหลังนี้"
+          triggerLabel="เพิ่มห้อง"
         >
           <CreateRoomForm homeId={home.id} />
         </MobileCreateDialog>
       </section>
-      <div className="grid items-start gap-5 md:grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
           <Card className="border-0 shadow-sm">
             <CardHeader>

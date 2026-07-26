@@ -110,7 +110,7 @@ export function RoomRow({
         </summary>
 
         <div className="grid gap-4 border-t p-4">
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="min-h-24 rounded-md bg-[#ff806f] p-4 text-white">
               <p className="text-xs font-semibold uppercase text-white/75">ขนาดห้อง</p>
               <p className="mt-2 text-lg font-semibold">
@@ -161,7 +161,7 @@ export function RoomRow({
               </div>
             </div>
 
-            <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
+            <div className="grid gap-4 p-4 md:grid-cols-1 lg:grid-cols-[1fr_320px]">
               <div className="grid content-start gap-2">
                 {room.openings.length ? (
                   room.openings.map((opening) => (
@@ -170,7 +170,7 @@ export function RoomRow({
                         <input type="hidden" name="id" value={opening.id} />
                         <input type="hidden" name="home_id" value={room.home_id} />
                         <input type="hidden" name="room_id" value={room.id} />
-                        <div className="grid gap-3 sm:grid-cols-[150px_1fr]">
+                        <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-[150px_1fr]">
                           <div className="space-y-1">
                             <Label htmlFor={`edit-opening-type-${opening.id}`}>ประเภท</Label>
                             <select
@@ -209,8 +209,8 @@ export function RoomRow({
                         </div>
                       </form>
                     ) : (
-                      <div key={opening.id} className="grid gap-3 rounded-md border bg-white p-3 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
-                        <div className="grid gap-2 sm:grid-cols-[140px_1fr_90px] sm:items-center">
+                      <div key={opening.id} className="grid gap-3 rounded-md border bg-white p-3 shadow-sm sm:grid-cols-1 md:grid-cols-[1fr_auto] md:items-center">
+                        <div className="grid gap-2 sm:grid-cols-1 md:grid-cols-[140px_1fr_90px] md:items-center">
                           <div>
                             <p className="text-sm font-semibold">{opening.label || openingTypeLabels[opening.opening_type]}</p>
                             <p className="text-xs text-muted-foreground">{openingTypeLabels[opening.opening_type]}</p>
@@ -253,7 +253,7 @@ export function RoomRow({
                   <p className="text-sm font-semibold">เพิ่มช่องเปิด</p>
                   <p className="text-xs text-muted-foreground">ใช้หนึ่งรายการต่อหนึ่งขนาด</p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
                   <div className="space-y-1">
                     <Label htmlFor={`opening-type-${room.id}`}>ประเภท</Label>
                     <select
@@ -292,8 +292,7 @@ export function RoomRow({
           </div>
         </div>
       </details>
-      <details name="room-actions"   className="absolute right-3 top-6 z-30"
->
+      <details name="room-actions" className="absolute right-3 top-6 z-40">
         <summary
           className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md border bg-white text-muted-foreground shadow-sm hover:bg-secondary hover:text-foreground [&::-webkit-details-marker]:hidden"
           aria-label={`เมนูจัดการ ${room.name}`}

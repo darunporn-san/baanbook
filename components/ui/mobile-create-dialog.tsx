@@ -20,7 +20,7 @@ export function MobileCreateDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   return (
-    <div className="absolute right-4 top-4 z-10 lg:hidden">
+    <div className="absolute right-4 top-4 z-10 sm:hidden">
       <Button
         type="button"
         variant="secondary"
@@ -72,7 +72,7 @@ export function MobileCreateTrigger({
   label: string;
 }) {
   return (
-    <div className="absolute right-4 top-4 z-10 lg:hidden">
+    <div className="absolute right-4 top-4 z-10 sm:hidden">
       <Button
         type="button"
         variant="secondary"

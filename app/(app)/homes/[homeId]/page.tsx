@@ -55,13 +55,14 @@ export default async function HomeDetailPage({
             title="เพิ่มห้อง"
             description="สร้างห้องสำหรับบ้านหลังนี้"
             triggerLabel="เพิ่มห้อง"
+            className="lg:block 2xl:hidden"
           >
             <CreateRoomForm homeId={home.id} />
           </MobileCreateDialog>
         </div>
       </section>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="space-y-4">
+      <div className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="min-w-0 space-y-4">
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">ห้องใน {home.name}</CardTitle>
@@ -69,7 +70,7 @@ export default async function HomeDetailPage({
                 {rooms.length} ห้อง · ขนาดพื้นที่ ผนัง และช่องเปิดของบ้านหลังนี้
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-3">
+            <CardContent className="grid min-w-0 gap-3">
               {rooms.length ? (
                 rooms.map((room) => (
                   <RoomRow
@@ -89,8 +90,8 @@ export default async function HomeDetailPage({
           </Card>
         </section>
 
-        <aside className="hidden lg:block">
-          <Card className="h-fit border-0 bg-white shadow-sm lg:sticky lg:top-20">
+        <aside className="hidden 2xl:block">
+          <Card className="h-fit border-0 bg-white shadow-sm 2xl:sticky 2xl:top-20">
             <CardHeader>
               <CardTitle className="text-base">เพิ่มห้อง</CardTitle>
               <CardDescription>สร้างห้องสำหรับบ้านหลังนี้</CardDescription>

@@ -3,11 +3,13 @@
 import { useRef, type ReactNode } from "react";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type MobileCreateDialogProps = {
   title: string;
   description?: string;
   triggerLabel?: string;
+  className?: string;
   children: ReactNode;
 };
 
@@ -15,12 +17,13 @@ export function MobileCreateDialog({
   title,
   description,
   triggerLabel = title,
+  className,
   children,
 }: MobileCreateDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   return (
-    <div className="absolute right-4 top-4 z-10 lg:hidden">
+    <div className={cn("absolute right-4 top-4 z-10 lg:hidden", className)}>
       <Button
         type="button"
         variant="secondary"

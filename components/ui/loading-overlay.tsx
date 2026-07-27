@@ -1,4 +1,7 @@
+"use client";
+
 import { LoaderCircle } from "lucide-react";
+import { createPortal, useFormStatus } from "react-dom";
 
 export function LoadingOverlay({
   label = "กำลังโหลดข้อมูล",
@@ -20,4 +23,16 @@ export function LoadingOverlay({
       </div>
     </div>
   );
+}
+
+export function SubmitLoadingOverlay({
+  label = "กำลังบันทึกข้อมูล",
+}: {
+  label?: string;
+}) {
+  const { pending } = useFormStatus();
+
+  return pending && typeof document !== "undefined"
+    ? createPortal(<LoadingOverlay label={label} />, document.body)
+    : null;
 }

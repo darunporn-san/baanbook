@@ -25,7 +25,7 @@ export function CreateMortgagePaymentForm({
   suggestion?: AdjustedMortgageScheduleRow;
   futureSchedule: Pick<
     MortgageScheduleRow,
-    "annualInterestRate" | "dueDate" | "paymentMinor"
+    "annualInterestRate" | "dueDate" | "interestDays" | "paymentMinor"
   >[];
 }) {
   const [mode, setMode] = useState<"scheduled" | "custom">(

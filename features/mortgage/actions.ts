@@ -28,7 +28,16 @@ export async function createMortgageProfile(formData: FormData) {
   const lenderName = String(formData.get("lender_name") ?? "").trim();
   const startDate = String(formData.get("start_date") ?? "");
   const termMonths = Number(String(formData.get("term_months") ?? "0"));
-  if (!home || !lenderName || !startDate || !Number.isFinite(termMonths))
+  const paymentDueDay = Number(formData.get("payment_due_day"));
+  if (
+    !home ||
+    !lenderName ||
+    !startDate ||
+    !Number.isFinite(termMonths) ||
+    !Number.isInteger(paymentDueDay) ||
+    paymentDueDay < 1 ||
+    paymentDueDay > 31
+  )
     redirect("/mortgage");
 
   const supabase = await createClient();
@@ -40,6 +49,7 @@ export async function createMortgageProfile(formData: FormData) {
       principal_minor: money(formData, "principal"),
       term_months: termMonths,
       start_date: startDate,
+      payment_due_day: paymentDueDay,
       notes: String(formData.get("notes") ?? "").trim() || null,
     })
     .select("id")
@@ -91,12 +101,16 @@ export async function updateMortgageProfile(formData: FormData) {
   const lenderName = String(formData.get("lender_name") ?? "").trim();
   const startDate = String(formData.get("start_date") ?? "");
   const termMonths = Number(String(formData.get("term_months") ?? "0"));
+  const paymentDueDay = Number(formData.get("payment_due_day"));
   if (
     !id ||
     !homeId ||
     !lenderName ||
     !startDate ||
-    !Number.isFinite(termMonths)
+    !Number.isFinite(termMonths) ||
+    !Number.isInteger(paymentDueDay) ||
+    paymentDueDay < 1 ||
+    paymentDueDay > 31
   )
     redirect("/mortgage");
 
@@ -108,6 +122,7 @@ export async function updateMortgageProfile(formData: FormData) {
       principal_minor: money(formData, "principal"),
       term_months: termMonths,
       start_date: startDate,
+      payment_due_day: paymentDueDay,
       notes: String(formData.get("notes") ?? "").trim() || null,
     })
     .eq("id", id)

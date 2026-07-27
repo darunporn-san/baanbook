@@ -185,6 +185,7 @@ export default async function MortgagePage({
         principalMinor: profile.principal_minor,
         termMonths: profile.term_months,
         startDate: profile.start_date,
+        paymentDueDay: profile.payment_due_day,
         cycles: rateCycles,
         terms: yearlyTerms,
       })
@@ -293,6 +294,12 @@ export default async function MortgagePage({
                     <span className="rounded-full bg-secondary px-3 py-1">
                       เริ่ม {formatDate(profile.start_date)}
                     </span>
+                    <span className="rounded-full bg-secondary px-3 py-1">
+                      ครบกำหนด{" "}
+                      {profile.payment_due_day === 31
+                        ? "วันสิ้นเดือน"
+                        : `วันที่ ${profile.payment_due_day}`}
+                    </span>
                   </div>
                   <CardDescription className="mt-3">
                     การคำนวณอิงจากข้อมูลที่คุณกรอกในหน้านี้เท่านั้น
@@ -367,6 +374,24 @@ export default async function MortgagePage({
                           defaultValue={profile.start_date}
                           required
                         />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="mortgage-payment-due-day">
+                          วันครบกำหนดชำระ
+                        </Label>
+                        <input
+                          id="mortgage-payment-due-day"
+                          name="payment_due_day"
+                          type="number"
+                          min="1"
+                          max="31"
+                          defaultValue={profile.payment_due_day}
+                          required
+                          className="h-10 rounded-md border bg-background px-3 text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          ระบุ 31 สำหรับวันสิ้นเดือน
+                        </p>
                       </div>
                       <div className="grid gap-2 sm:col-span-2">
                         <Label htmlFor="mortgage-notes">บันทึก</Label>
@@ -570,6 +595,9 @@ export default async function MortgagePage({
                   {formatMoney(projectedInterest, home?.default_currency)} ·
                   งวดสุดท้าย{" "}
                   {formatDate(mortgageSchedule.at(-1)?.dueDate)}
+                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  คิดดอกเบี้ยรายวันตามจำนวนวันจริง ÷ 365
                 </span>
               </summary>
               <CardContent className="min-w-0 p-4 sm:p-5">
@@ -904,6 +932,19 @@ export default async function MortgagePage({
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     />
                     <DateInput name="start_date" required />
+                    <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+                      วันครบกำหนดชำระ
+                      <input
+                        name="payment_due_day"
+                        type="number"
+                        min="1"
+                        max="31"
+                        defaultValue="31"
+                        required
+                        className="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+                      />
+                      <span>ระบุ 31 สำหรับวันสิ้นเดือน</span>
+                    </label>
                     <textarea
                       name="notes"
                       placeholder="บันทึก"
@@ -1160,6 +1201,7 @@ export default async function MortgagePage({
                       .map((row) => ({
                         annualInterestRate: row.annualInterestRate,
                         dueDate: row.dueDate,
+                        interestDays: row.interestDays,
                         paymentMinor: row.paymentMinor,
                       }))}
                   />

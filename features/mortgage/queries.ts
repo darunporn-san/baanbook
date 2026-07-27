@@ -9,6 +9,7 @@ export type MortgageProfile = {
   annual_interest_rate: number;
   term_months: number;
   start_date: string;
+  payment_due_day: number;
   monthly_payment_minor: number | null;
   notes: string | null;
 };
@@ -55,7 +56,7 @@ export async function listMortgageProfiles(
   const { data, error } = await supabase
     .from("mortgage_profiles")
     .select(
-      "id,home_id,lender_name,principal_minor,annual_interest_rate,term_months,start_date,monthly_payment_minor,notes",
+      "id,home_id,lender_name,principal_minor,annual_interest_rate,term_months,start_date,payment_due_day,monthly_payment_minor,notes",
     )
     .eq("home_id", homeId)
     .is("deleted_at", null)

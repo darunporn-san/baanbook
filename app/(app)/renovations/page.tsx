@@ -2,6 +2,7 @@ import { CalendarDays, Hammer, MapPin, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { EditDialog } from "@/components/ui/edit-dialog";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
@@ -311,6 +312,7 @@ export default async function RenovationsPage({
                                 บันทึกการแก้ไข
                               </Button>
                             </div>
+                            <SubmitLoadingOverlay label="กำลังบันทึกโปรเจกต์" />
                           </form>
                         </EditDialog>
                         <form action={deleteRenovationProject}>
@@ -327,6 +329,7 @@ export default async function RenovationsPage({
                           >
                             {commonText.delete}
                           </Button>
+                          <SubmitLoadingOverlay label="กำลังลบโปรเจกต์" />
                         </form>
                       </div>
                     </CardContent>
@@ -436,6 +439,7 @@ export default async function RenovationsPage({
                   >
                     เพิ่มโปรเจกต์
                   </Button>
+                  <SubmitLoadingOverlay label="กำลังเพิ่มโปรเจกต์" />
                 </form>
               ) : (
                 <p className="text-sm text-muted-foreground">

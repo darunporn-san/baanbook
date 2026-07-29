@@ -344,11 +344,25 @@ export default async function PlanningPage({
                                         ชิ้น
                                       </p>
                                     </div>
-                                    <div className="rounded-md bg-secondary/60 p-2">
+                                    <div
+                                      className={`rounded-md p-2 ${
+                                        option.has_installation
+                                          ? "bg-secondary/60"
+                                          : "bg-[#fff5d8] text-[#705b2f]"
+                                      }`}
+                                    >
                                       <p className="text-[11px] text-muted-foreground">
-                                        รวมสินค้า
+                                        {option.has_installation
+                                          ? "รวมสินค้า"
+                                          : "รวม"}
                                       </p>
-                                      <p className="mt-1 font-medium">
+                                      <p
+                                        className={`mt-1 ${
+                                          option.has_installation
+                                            ? "font-medium"
+                                            : "font-semibold"
+                                        }`}
+                                      >
                                         {formatMoney(
                                           productTotal,
                                           option.currency,
@@ -404,72 +418,74 @@ export default async function PlanningPage({
                                     </p>
                                   ) : null}
 
-                                  <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-                                    {option.product_url ? (
-                                      <a
-                                        href={option.product_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-1 text-sm font-medium text-primary"
-                                      >
-                                        ดูรายละเอียด
-                                        <ExternalLink className="h-3.5 w-3.5" />
-                                      </a>
-                                    ) : (
-                                      <span />
-                                    )}
-                                    {plan.status === "comparing" ? (
-                                      <div className="flex gap-2">
-                                        <EditComparisonOptionDialog
-                                          option={option}
-                                          planId={plan.id}
-                                        />
-                                        <form action={deleteComparisonOption}>
-                                          <input
-                                            type="hidden"
-                                            name="id"
-                                            value={option.id}
+                                  <div className="mt-auto pt-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+                                      {option.product_url ? (
+                                        <a
+                                          href={option.product_url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-flex items-center gap-1 text-sm font-medium text-primary"
+                                        >
+                                          ดูรายละเอียด
+                                          <ExternalLink className="h-3.5 w-3.5" />
+                                        </a>
+                                      ) : (
+                                        <span />
+                                      )}
+                                      {plan.status === "comparing" ? (
+                                        <div className="flex gap-2">
+                                          <EditComparisonOptionDialog
+                                            option={option}
+                                            planId={plan.id}
                                           />
-                                          <input
-                                            type="hidden"
-                                            name="home_id"
-                                            value={plan.home_id}
-                                          />
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            pendingText="กำลังลบ..."
-                                          >
-                                            ลบ
-                                          </Button>
-                                          <SubmitLoadingOverlay label="กำลังลบตัวเลือก" />
-                                        </form>
-                                        <form action={confirmComparisonOption}>
-                                          <input
-                                            type="hidden"
-                                            name="home_id"
-                                            value={plan.home_id}
-                                          />
-                                          <input
-                                            type="hidden"
-                                            name="comparison_plan_id"
-                                            value={plan.id}
-                                          />
-                                          <input
-                                            type="hidden"
-                                            name="option_id"
-                                            value={option.id}
-                                          />
-                                          <Button
-                                            size="sm"
-                                            pendingText="กำลังยืนยัน..."
-                                          >
-                                            ยืนยันเลือก
-                                          </Button>
-                                          <SubmitLoadingOverlay label="กำลังยืนยันตัวเลือก" />
-                                        </form>
-                                      </div>
-                                    ) : null}
+                                          <form action={deleteComparisonOption}>
+                                            <input
+                                              type="hidden"
+                                              name="id"
+                                              value={option.id}
+                                            />
+                                            <input
+                                              type="hidden"
+                                              name="home_id"
+                                              value={plan.home_id}
+                                            />
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              pendingText="กำลังลบ..."
+                                            >
+                                              ลบ
+                                            </Button>
+                                            <SubmitLoadingOverlay label="กำลังลบตัวเลือก" />
+                                          </form>
+                                          <form action={confirmComparisonOption}>
+                                            <input
+                                              type="hidden"
+                                              name="home_id"
+                                              value={plan.home_id}
+                                            />
+                                            <input
+                                              type="hidden"
+                                              name="comparison_plan_id"
+                                              value={plan.id}
+                                            />
+                                            <input
+                                              type="hidden"
+                                              name="option_id"
+                                              value={option.id}
+                                            />
+                                            <Button
+                                              size="sm"
+                                              pendingText="กำลังยืนยัน..."
+                                            >
+                                              ยืนยันเลือก
+                                            </Button>
+                                            <SubmitLoadingOverlay label="กำลังยืนยันตัวเลือก" />
+                                          </form>
+                                        </div>
+                                      ) : null}
+                                    </div>
                                   </div>
                                 </div>
                               );

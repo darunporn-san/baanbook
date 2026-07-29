@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Clock,
-  Download,
-  FileText,
   Home,
   LayoutDashboard,
   Landmark,
@@ -15,9 +13,7 @@ import {
   ShoppingCart,
   Wrench,
   Menu,
-  Power,
   Receipt,
-  Settings,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,30 +45,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     >
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex w-60 -translate-x-full flex-col overflow-y-auto bg-[#246a78] px-3 py-4 text-white shadow-xl transition-[transform,width] md:translate-x-0",
+          "fixed inset-y-0 left-0 z-30 flex w-60 -translate-x-full flex-col overflow-y-auto bg-[#246a78] px-3 py-4 text-white shadow-xl transition-[transform,width] lg:translate-x-0",
           isMobileOpen && "translate-x-0",
-          isExpanded ? "md:w-60" : "md:w-[72px]",
+          isExpanded ? "lg:w-60" : "lg:w-[72px]",
         )}
       >
         <Link
           href="/dashboard"
           className={cn(
             "flex h-11 w-full items-center justify-start gap-3 px-3",
-            !isExpanded && "md:w-11 md:justify-center md:px-0",
+            !isExpanded && "lg:w-11 lg:justify-center lg:px-0",
           )}
           aria-label="แดชบอร์ด BaanBook"
           onClick={() => setIsMobileOpen(false)}
         >
           <Home className="h-5 w-5" />
           <span
-            className={cn("text-sm font-semibold", !isExpanded && "md:hidden")}
+            className={cn("text-sm font-semibold", !isExpanded && "lg:hidden")}
           >
             BaanBook
           </span>
         </Link>
         <button
           type="button"
-          className="absolute right-4 top-5 flex h-9 w-9 items-center justify-center rounded-sm text-white/80 hover:bg-white/15 hover:text-white md:hidden"
+          className="absolute right-4 top-5 flex h-9 w-9 items-center justify-center rounded-sm text-white/80 hover:bg-white/15 hover:text-white lg:hidden"
           onClick={() => setIsMobileOpen(false)}
           aria-label="ปิดเมนู"
         >
@@ -83,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={() => setIsExpanded((value) => !value)}
             className={cn(
-              "hidden h-10 items-center rounded-sm text-white/80 hover:bg-white/15 hover:text-white md:flex",
+              "hidden h-10 items-center rounded-sm text-white/80 hover:bg-white/15 hover:text-white lg:flex",
               isExpanded
                 ? "w-full justify-start gap-3 px-3"
                 : "w-10 justify-center self-center",
@@ -93,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <Menu className="h-5 w-5" />
             <span
-              className={cn("text-sm font-medium", !isExpanded && "md:hidden")}
+              className={cn("text-sm font-medium", !isExpanded && "lg:hidden")}
             >
               เมนู
             </span>
@@ -110,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   "flex h-10 w-full items-center justify-start gap-3 rounded-sm px-3 text-white/80 hover:bg-white/15 hover:text-white",
                   isActive && "bg-white/15 text-white",
                   !isExpanded &&
-                    "md:w-10 md:justify-center md:self-center md:px-0",
+                    "lg:w-10 lg:justify-center lg:self-center lg:px-0",
                 )}
                 aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
@@ -121,7 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   className={cn(
                     "text-sm font-medium",
                     isActive && "font-bold",
-                    !isExpanded && "md:hidden",
+                    !isExpanded && "lg:hidden",
                   )}
                 >
                   {item.label}
@@ -164,21 +160,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {isMobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-20 bg-black/40 md:hidden"
+          className="fixed inset-0 z-20 bg-black/40 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
           aria-label="ปิดเมนู"
         />
       ) : null}
       <div
         className={cn(
-          "transition-[padding] md:pl-[72px]",
-          isExpanded && "md:pl-60",
+          "transition-[padding] lg:pl-[72px]",
+          isExpanded && "lg:pl-60",
         )}
       >
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/95 px-4 md:justify-end md:px-6">
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/95 px-4 lg:justify-end lg:px-6">
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-sm text-primary hover:bg-secondary md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-sm text-primary hover:bg-secondary lg:hidden"
             onClick={() => setIsMobileOpen(true)}
             aria-label="เปิดเมนู"
             aria-expanded={isMobileOpen}

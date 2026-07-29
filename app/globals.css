@@ -31,4 +31,17 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  select {
+    @apply block w-full min-w-0 max-w-full;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  select option {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

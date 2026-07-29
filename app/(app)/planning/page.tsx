@@ -248,7 +248,7 @@ export default async function PlanningPage({
                             <CardTitle className="text-xl">
                               {plan.title}
                             </CardTitle>
-                            <CardDescription className="mt-1">
+                            <CardDescription className="mt-1 whitespace-pre-wrap break-words">
                               {[room?.name, plan.notes]
                                 .filter(Boolean)
                                 .join(" · ") || "ไม่ระบุห้อง"}
@@ -272,7 +272,7 @@ export default async function PlanningPage({
                       </summary>
                       <CardContent className="grid gap-3 p-4">
                         {plan.options.length ? (
-                          <div className="grid items-start gap-3 xl:grid-cols-2">
+                          <div className="grid items-stretch gap-3 xl:grid-cols-2">
                             {plan.options.map((option) => {
                               const productTotal = priceTotal(
                                 option.product_price_minor,
@@ -293,7 +293,7 @@ export default async function PlanningPage({
                               return (
                                 <div
                                   key={option.id}
-                                  className={`rounded-lg border p-4 ${
+                                  className={`flex h-full flex-col rounded-lg border p-4 ${
                                     selected
                                       ? "border-primary bg-[#f4faf9] ring-1 ring-primary"
                                       : "bg-white"
@@ -399,12 +399,12 @@ export default async function PlanningPage({
                                   </div>
 
                                   {option.notes ? (
-                                    <p className="mt-3 text-sm text-muted-foreground">
+                                    <p className="mt-3 whitespace-pre-wrap break-words text-sm text-muted-foreground">
                                       {option.notes}
                                     </p>
                                   ) : null}
 
-                                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+                                  <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
                                     {option.product_url ? (
                                       <a
                                         href={option.product_url}
@@ -548,7 +548,8 @@ export default async function PlanningPage({
                                 name="product_url"
                                 type="url"
                                 placeholder="ลิงก์สินค้า / ใบเสนอราคา"
-                                className={fieldClass}
+                                aria-label="ลิงก์สินค้า หรือใบเสนอราคา"
+                                className={`${fieldClass} sm:self-end`}
                               />
                               <textarea
                                 name="notes"
@@ -637,13 +638,9 @@ export default async function PlanningPage({
                   <label className="grid gap-2 text-sm font-medium">
                     เมื่อยืนยันแล้วส่งไป
                     <select name="destination_type" className={fieldClass}>
-                      <option value="shopping">
-                        รายการซื้อ — สินค้า/วัสดุ
-                      </option>
-                      <option value="maintenance">
-                        บำรุงรักษา — ติดตั้ง/ซ่อม/จ้างช่าง
-                      </option>
-                      <option value="renovation">รีโนเวท — งานปรับปรุง</option>
+                      <option value="shopping">รายการซื้อ</option>
+                      <option value="maintenance">บำรุงรักษา</option>
+                      <option value="renovation">รีโนเวท</option>
                     </select>
                   </label>
                   <label className="grid gap-2 text-sm font-medium">

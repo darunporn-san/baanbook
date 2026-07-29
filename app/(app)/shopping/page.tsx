@@ -246,7 +246,7 @@ export default async function ShoppingPage({
                           ) : null}
                         </div>
                         {item.notes ? (
-                          <p className="mt-3 text-sm text-muted-foreground">
+                          <p className="mt-3 whitespace-pre-wrap break-words text-sm text-muted-foreground">
                             {item.notes}
                           </p>
                         ) : null}

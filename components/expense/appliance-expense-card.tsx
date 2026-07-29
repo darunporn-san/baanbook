@@ -463,7 +463,7 @@ export function ApplianceExpenseCard({
                   />
                 ) : null}
                 {expense.notes ? (
-                  <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                  <p className="mt-2 max-w-2xl whitespace-pre-wrap break-words text-sm text-muted-foreground">
                     {expense.notes}
                   </p>
                 ) : null}

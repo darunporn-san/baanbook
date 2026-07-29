@@ -52,11 +52,16 @@ export function DocumentRow({
 
   return (
     <div className="flex items-center justify-between gap-3">
-      <div>
+      <div className="min-w-0">
         <p className="font-medium">{document.title}</p>
         <p className="text-sm text-muted-foreground">
           {getLabel(documentTypeLabels, document.document_type)} · {document.file_name ?? commonText.noFile} · {formatDate(document.created_at)}
         </p>
+        {document.notes ? (
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">
+            {document.notes}
+          </p>
+        ) : null}
       </div>
       <div className="flex gap-2">
         <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>{commonText.edit}</Button>

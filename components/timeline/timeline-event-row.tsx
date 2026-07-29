@@ -49,7 +49,7 @@ export function TimelineEventRow({
           {formatTimelineTitle(event.title)}
         </p>
         {event.description ? (
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">
             {event.description}
           </p>
         ) : null}

@@ -100,11 +100,9 @@ export function EditComparisonPlanDialog({
                 defaultValue={plan.destination_type}
                 className={fieldClass}
               >
-                <option value="shopping">รายการซื้อ — สินค้า/วัสดุ</option>
-                <option value="maintenance">
-                  บำรุงรักษา — ติดตั้ง/ซ่อม/จ้างช่าง
-                </option>
-                <option value="renovation">รีโนเวท — งานปรับปรุง</option>
+                <option value="shopping">รายการซื้อ</option>
+                <option value="maintenance">บำรุงรักษา</option>
+                <option value="renovation">รีโนเวท</option>
               </select>
             </label>
           )}

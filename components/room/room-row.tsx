@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MoreHorizontal, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { Room } from "@/features/rooms/queries";
 import { Button } from "@/components/ui/button";
+import { EditDialog } from "@/components/ui/edit-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDimension } from "@/lib/format";
@@ -25,7 +26,6 @@ export function RoomRow({
   deleteOpeningAction: (formData: FormData) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [editingOpeningId, setEditingOpeningId] = useState<string | null>(null);
   const floorArea = room.width_m != null && room.length_m != null ? room.width_m * room.length_m : null;
   const wallArea =
     room.width_m != null && room.length_m != null && room.height_m != null
@@ -171,78 +171,78 @@ export function RoomRow({
               <div className="grid min-w-0 content-start gap-2 [@container(min-width:30rem)]:grid-cols-2">
                 {room.openings.length ? (
                   room.openings.map((opening) => (
-                    editingOpeningId === opening.id ? (
-                      <form key={opening.id} action={updateOpeningAction} className="grid gap-3 rounded-md border bg-white p-3 shadow-sm [@container(min-width:30rem)]:col-span-2">
-                        <input type="hidden" name="id" value={opening.id} />
-                        <input type="hidden" name="home_id" value={room.home_id} />
-                        <input type="hidden" name="room_id" value={room.id} />
-                        <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-[150px_1fr]">
-                          <div className="space-y-1">
-                            <Label htmlFor={`edit-opening-type-${opening.id}`}>ประเภท</Label>
-                            <select
-                              id={`edit-opening-type-${opening.id}`}
-                              name="opening_type"
-                              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                              defaultValue={opening.opening_type}
-                            >
-                              {Object.entries(openingTypeLabels).map(([value, label]) => (
-                                <option key={value} value={value}>{label}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label htmlFor={`edit-opening-label-${opening.id}`}>ชื่อรายการ</Label>
-                            <Input id={`edit-opening-label-${opening.id}`} name="label" defaultValue={opening.label ?? ""} />
-                          </div>
+                    <div key={opening.id} className="grid min-w-0 gap-3 rounded-md border bg-white p-3 shadow-sm">
+                      <div className="grid min-w-0 gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">{opening.label || openingTypeLabels[opening.opening_type]}</p>
+                          <p className="text-xs text-muted-foreground">{openingTypeLabels[opening.opening_type]}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-                          <div className="space-y-1">
-                            <Label htmlFor={`edit-opening-width-${opening.id}`}>กว้าง</Label>
-                            <Input id={`edit-opening-width-${opening.id}`} name="width_m" type="number" step="0.01" min="0" defaultValue={opening.width_m ?? ""} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label htmlFor={`edit-opening-height-${opening.id}`}>สูง</Label>
-                            <Input id={`edit-opening-height-${opening.id}`} name="height_m" type="number" step="0.01" min="0" defaultValue={opening.height_m ?? ""} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label htmlFor={`edit-opening-quantity-${opening.id}`}>จำนวน</Label>
-                            <Input id={`edit-opening-quantity-${opening.id}`} name="quantity" type="number" step="1" min="1" defaultValue={opening.quantity} />
-                          </div>
+                        <div className="rounded-md bg-[#eef5f6] px-3 py-2">
+                          <p className="text-xs font-semibold uppercase text-muted-foreground">ขนาด</p>
+                          <p className="text-sm font-semibold">
+                            {formatDimension(opening.width_m) ?? "-"} x {formatDimension(opening.height_m) ?? "-"} ม.
+                          </p>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm">บันทึกช่องเปิด</Button>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => setEditingOpeningId(null)}>{commonText.cancel}</Button>
+                        <div className="rounded-md bg-[#eef5f6] px-3 py-2">
+                          <p className="text-xs font-semibold uppercase text-muted-foreground">จำนวน</p>
+                          <p className="text-sm font-semibold">{opening.quantity}</p>
                         </div>
-                      </form>
-                    ) : (
-                      <div key={opening.id} className="grid min-w-0 gap-3 rounded-md border bg-white p-3 shadow-sm">
-                        <div className="grid min-w-0 gap-2">
-                          <div>
-                            <p className="text-sm font-semibold">{opening.label || openingTypeLabels[opening.opening_type]}</p>
-                            <p className="text-xs text-muted-foreground">{openingTypeLabels[opening.opening_type]}</p>
-                          </div>
-                          <div className="rounded-md bg-[#eef5f6] px-3 py-2">
-                            <p className="text-xs font-semibold uppercase text-muted-foreground">ขนาด</p>
-                            <p className="text-sm font-semibold">
-                              {formatDimension(opening.width_m) ?? "-"} x {formatDimension(opening.height_m) ?? "-"} ม.
-                            </p>
-                          </div>
-                          <div className="rounded-md bg-[#eef5f6] px-3 py-2">
-                            <p className="text-xs font-semibold uppercase text-muted-foreground">จำนวน</p>
-                            <p className="text-sm font-semibold">{opening.quantity}</p>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button type="button" variant="outline" size="sm" onClick={() => setEditingOpeningId(opening.id)}>{commonText.edit}</Button>
-                          <form action={deleteOpeningAction}>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <EditDialog
+                          title="แก้ไขช่องเปิด"
+                          description={opening.label || openingTypeLabels[opening.opening_type]}
+                        >
+                          <form action={updateOpeningAction} className="grid gap-4">
                             <input type="hidden" name="id" value={opening.id} />
                             <input type="hidden" name="home_id" value={room.home_id} />
                             <input type="hidden" name="room_id" value={room.id} />
-                            <Button variant="ghost" size="sm">{commonText.delete}</Button>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-opening-type-${opening.id}`}>ประเภท</Label>
+                                <select
+                                  id={`edit-opening-type-${opening.id}`}
+                                  name="opening_type"
+                                  className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                                  defaultValue={opening.opening_type}
+                                >
+                                  {Object.entries(openingTypeLabels).map(([value, label]) => (
+                                    <option key={value} value={value}>{label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-opening-label-${opening.id}`}>ชื่อรายการ</Label>
+                                <Input id={`edit-opening-label-${opening.id}`} name="label" defaultValue={opening.label ?? ""} />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-opening-width-${opening.id}`}>กว้าง</Label>
+                                <Input id={`edit-opening-width-${opening.id}`} name="width_m" type="number" step="0.01" min="0" defaultValue={opening.width_m ?? ""} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-opening-height-${opening.id}`}>สูง</Label>
+                                <Input id={`edit-opening-height-${opening.id}`} name="height_m" type="number" step="0.01" min="0" defaultValue={opening.height_m ?? ""} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-opening-quantity-${opening.id}`}>จำนวน</Label>
+                                <Input id={`edit-opening-quantity-${opening.id}`} name="quantity" type="number" step="1" min="1" defaultValue={opening.quantity} />
+                              </div>
+                            </div>
+                            <div className="flex justify-end border-t pt-4">
+                              <Button size="sm">บันทึกช่องเปิด</Button>
+                            </div>
                           </form>
-                        </div>
+                        </EditDialog>
+                        <form action={deleteOpeningAction}>
+                          <input type="hidden" name="id" value={opening.id} />
+                          <input type="hidden" name="home_id" value={room.home_id} />
+                          <input type="hidden" name="room_id" value={room.id} />
+                          <Button variant="ghost" size="sm">{commonText.delete}</Button>
+                        </form>
                       </div>
-                    )
+                    </div>
                   ))
                 ) : (
                   <div className="rounded-md border border-dashed bg-white p-4 [@container(min-width:30rem)]:col-span-2">

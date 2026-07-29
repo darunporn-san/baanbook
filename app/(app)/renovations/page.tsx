@@ -57,13 +57,14 @@ export default async function RenovationsPage({
     0,
   );
   const totalActual = getRenovationActualAmount(expenses);
+  const totalRemaining = totalBudget - totalActual;
   const activeCount = projects.filter(
     (item) => item.status === "active",
   ).length;
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="relative grid gap-5 rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_360px] lg:items-end">
+      <section className="relative grid gap-5 rounded-xl bg-[#ff806f] p-5 text-white shadow-sm sm:p-6 lg:grid-cols-[1fr_320px] lg:items-end">
         <div>
           <p className="text-sm font-medium text-white/75">จัดการโปรเจกต์</p>
           <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">รีโนเวท</h1>
@@ -87,9 +88,9 @@ export default async function RenovationsPage({
         </div>
       </section>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="space-y-4">
-          <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <section className="grid grid-cols-2 gap-3">
             <Card className="border-0 shadow-sm">
               <CardContent className="flex items-center gap-3 p-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fff0ed] text-[#b84e40]">
@@ -118,29 +119,43 @@ export default async function RenovationsPage({
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-sm">
-              <CardContent className="flex items-center gap-3 p-4">
+            <Card className="col-span-2 border-0 shadow-sm">
+              <CardContent className="flex h-full items-center gap-4 p-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fff5d8] text-[#705b2f]">
                   <Wallet className="h-5 w-5" />
                 </span>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">งบประมาณรวม</p>
-                  <p className="mt-1 truncate text-xl font-semibold">
-                    {formatMoney(totalBudget, home?.default_currency)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm">
-              <CardContent className="flex items-center gap-3 p-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e8f5f3] text-primary">
-                  <Wallet className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">ใช้จริงรวม</p>
-                  <p className="mt-1 truncate text-xl font-semibold text-primary">
-                    {formatMoney(totalActual, home?.default_currency)}
-                  </p>
+                <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      งบประมาณรวม
+                    </p>
+                    <p className="mt-1 font-semibold">
+                      {formatMoney(totalBudget, home?.default_currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">ใช้จริงรวม</p>
+                    <p className="mt-1 font-semibold text-primary">
+                      {formatMoney(totalActual, home?.default_currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {totalRemaining >= 0 ? "คงเหลือรวม" : "เกินงบรวม"}
+                    </p>
+                    <p
+                      className={`mt-1 font-semibold ${
+                        totalRemaining < 0
+                          ? "text-destructive"
+                          : "text-primary"
+                      }`}
+                    >
+                      {formatMoney(
+                        Math.abs(totalRemaining),
+                        home?.default_currency,
+                      )}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -194,7 +209,7 @@ export default async function RenovationsPage({
                             {project.name}
                           </h3>
                           {project.notes ? (
-                            <p className="mt-1 text-sm text-muted-foreground">
+                            <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">
                               {project.notes}
                             </p>
                           ) : null}

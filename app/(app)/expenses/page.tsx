@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MonthInput } from "@/components/ui/month-input";
 import { ApplianceExpenseCard } from "@/components/expense/appliance-expense-card";
 import { CreateExpenseForm } from "@/components/expense/create-expense-form";
 import { ExpenseRow } from "@/components/expense/expense-row";
@@ -409,7 +410,7 @@ export default async function ExpensesPage({
       </section>
       {home ? (
         <Card className="overflow-hidden border-0 bg-white shadow-sm">
-          <CardHeader className="gap-4 space-y-0 border-b pb-4 sm:flex sm:flex-row sm:items-end sm:justify-between">
+          <CardHeader className="grid gap-4 space-y-0 border-b pb-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div>
               <CardTitle className="text-base">ภาพรวมงบประมาณ</CardTitle>
               <CardDescription className="mt-1">
@@ -419,26 +420,28 @@ export default async function ExpensesPage({
             {expenseBudget !== null ? (
               <form
                 action={addExpenseBudget}
-                className="flex w-full items-center gap-2 sm:w-auto"
+                className="grid w-full gap-1.5 lg:w-auto"
               >
                 <input type="hidden" name="home_id" value={home.id} />
                 <label
                   htmlFor="add-expense-budget"
-                  className="whitespace-nowrap text-sm font-medium"
+                  className="text-xs font-medium text-muted-foreground"
                 >
                   เพิ่มวงเงิน
                 </label>
-                <input
-                  id="add-expense-budget"
-                  name="amount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  required
-                  placeholder="ระบุยอดที่ต้องการเพิ่ม"
-                  className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm sm:w-64"
-                />
-                <Button type="submit">+ เพิ่มงบ</Button>
+                <div className="flex gap-2">
+                  <input
+                    id="add-expense-budget"
+                    name="amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    required
+                    placeholder="ระบุยอดที่ต้องการเพิ่ม"
+                    className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm lg:w-64"
+                  />
+                  <Button type="submit">+ เพิ่มงบ</Button>
+                </div>
               </form>
             ) : null}
           </CardHeader>
@@ -666,13 +669,11 @@ export default async function ExpensesPage({
                   >
                     เดือนที่จ่าย
                   </label>
-                  <input
+                  <MonthInput
                     id="expense-filter-month"
                     name="month"
-                    type="month"
-                    lang="th"
                     defaultValue={month}
-                    className="h-10 min-w-0 max-w-full rounded-md border bg-background px-3 text-sm"
+                    placeholder="ทุกเดือน"
                   />
                 </div>
                 <div className="space-y-1.5">

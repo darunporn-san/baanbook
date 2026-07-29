@@ -224,7 +224,7 @@ export function CreateMortgagePaymentForm({
         />
       </label>
       <Button type="submit" pendingText="กำลังบันทึก...">
-        เพิ่มรายการชำระ
+        เพิ่มการชำระเงิน
       </Button>
     </form>
   );

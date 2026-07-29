@@ -5,6 +5,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { EditDialog } from "@/components/ui/edit-dialog";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
+  MobileCreateDialog,
   MobileCreateTrigger,
   ResponsiveCreatePanel,
 } from "@/components/ui/mobile-create-dialog";
@@ -202,6 +203,14 @@ export default async function MortgagePage({
       })
     : [];
   const nextScheduledPayment = adjustedMortgageSchedule[payments.length];
+  const futurePaymentSchedule = adjustedMortgageSchedule
+    .slice(payments.length + 1)
+    .map((row) => ({
+      annualInterestRate: row.annualInterestRate,
+      dueDate: row.dueDate,
+      interestDays: row.interestDays,
+      paymentMinor: row.paymentMinor,
+    }));
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5">
@@ -307,7 +316,7 @@ export default async function MortgagePage({
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col items-start justify-between gap-3 bg-white p-5 sm:flex-row sm:items-center">
-                <p className="text-sm text-muted-foreground">
+                <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
                   {profile.notes || "ยังไม่มีรายละเอียดเพิ่มเติม"}
                 </p>
                 <div className="flex w-full shrink-0 justify-end gap-2 sm:w-auto">
@@ -488,6 +497,16 @@ export default async function MortgagePage({
                               ? "ยังไม่ระบุยอดผ่อน"
                               : `${formatMoney(term.monthly_payment_minor, home?.default_currency)} / เดือน`}
                           </p>
+                          {cycle?.notes && term.loan_year === 1 ? (
+                            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                              {cycle.notes}
+                            </p>
+                          ) : null}
+                          {term.notes ? (
+                            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                              {term.notes}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="flex w-full shrink-0 justify-end gap-2 sm:w-auto">
                           <EditDialog
@@ -756,9 +775,24 @@ export default async function MortgagePage({
 
           <details
             open
-            className="group overflow-hidden rounded-lg bg-card text-card-foreground shadow-sm"
+            className="group relative overflow-hidden rounded-lg bg-card text-card-foreground shadow-sm"
           >
-            <summary className="cursor-pointer list-none border-b border-transparent bg-secondary/25 p-6 group-open:border-border [&::-webkit-details-marker]:hidden">
+            {home && profile ? (
+              <MobileCreateDialog
+                title="เพิ่มการชำระเงิน"
+                description="บันทึกยอดชำระจริงจากธนาคาร"
+                triggerLabel="เพิ่มการชำระเงิน"
+              >
+                <CreateMortgagePaymentForm
+                  homeId={home.id}
+                  profileId={profile.id}
+                  currency={home.default_currency}
+                  suggestion={nextScheduledPayment}
+                  futureSchedule={futurePaymentSchedule}
+                />
+              </MobileCreateDialog>
+            ) : null}
+            <summary className="cursor-pointer list-none border-b border-transparent bg-secondary/25 p-6 pr-48 group-open:border-border lg:pr-6 [&::-webkit-details-marker]:hidden">
               <span className="block text-base font-semibold leading-none">
                 ประวัติการชำระ
               </span>
@@ -801,7 +835,7 @@ export default async function MortgagePage({
                           </span>
                         </div>
                         {payment.notes ? (
-                          <p className="mt-2 text-sm text-muted-foreground">
+                          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
                             {payment.notes}
                           </p>
                         ) : null}
@@ -1178,11 +1212,11 @@ export default async function MortgagePage({
 
             <details
               open
-              className="group overflow-hidden rounded-lg bg-white shadow-sm"
+              className="group hidden overflow-hidden rounded-lg bg-white shadow-sm lg:block"
             >
               <summary className="cursor-pointer list-none border-b border-transparent p-6 group-open:border-border [&::-webkit-details-marker]:hidden">
                 <span className="block text-base font-semibold leading-none">
-                  เพิ่มรายการชำระ
+                  เพิ่มการชำระเงิน
                 </span>
                 <span className="mt-1.5 block text-sm text-muted-foreground">
                   ระบบใส่ยอดประมาณการของงวดถัดไปให้
@@ -1196,14 +1230,7 @@ export default async function MortgagePage({
                     profileId={profile.id}
                     currency={home.default_currency}
                     suggestion={nextScheduledPayment}
-                    futureSchedule={adjustedMortgageSchedule
-                      .slice(payments.length + 1)
-                      .map((row) => ({
-                        annualInterestRate: row.annualInterestRate,
-                        dueDate: row.dueDate,
-                        interestDays: row.interestDays,
-                        paymentMinor: row.paymentMinor,
-                      }))}
+                    futureSchedule={futurePaymentSchedule}
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">

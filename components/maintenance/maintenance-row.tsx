@@ -73,7 +73,11 @@ export function MaintenanceRow({
         <p className="text-sm text-muted-foreground">
           {getLabel(maintenanceStatusLabels, task.status)} · {getLabel(priorityLabels, task.priority)} · {formatDate(task.due_date) || "ไม่มีกำหนด"}
         </p>
-        {task.description ? <p className="mt-1 text-sm text-muted-foreground">{task.description}</p> : null}
+        {task.description ? (
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">
+            {task.description}
+          </p>
+        ) : null}
       </div>
       <div className="flex gap-2">
         {task.status !== "done" ? (

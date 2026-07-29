@@ -13,6 +13,8 @@
     "phase4:check": "npm run check",
     "start": "next start",
     "test:installments": "node --no-warnings --experimental-strip-types lib/installments.test.mjs",
+    "test:planning": "node --no-warnings --experimental-strip-types features/planning/pricing.test.mjs",
+    "test:renovations": "node --no-warnings --experimental-strip-types features/renovations/spending.test.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

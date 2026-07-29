@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { updateComparisonPlan } from "@/features/planning/actions";
 import type { ComparisonPlan } from "@/features/planning/queries";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 
 const fieldClass =
   "h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -124,8 +125,11 @@ export function EditComparisonPlanDialog({
             >
               ยกเลิก
             </Button>
-            <Button type="submit">บันทึกการแก้ไข</Button>
+            <Button type="submit" pendingText="กำลังบันทึก...">
+              บันทึกการแก้ไข
+            </Button>
           </div>
+          <SubmitLoadingOverlay label="กำลังบันทึกแผนเปรียบเทียบ" />
         </form>
       </dialog>
     </>

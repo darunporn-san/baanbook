@@ -6,10 +6,6 @@ import { getHome } from "@/features/homes/queries";
 import { addTimelineEvent } from "@/features/timeline/add-event";
 import { createClient } from "@/lib/supabase/server";
 
-function path(homeId: string) {
-  return homeId ? `/renovations?homeId=${homeId}` : "/renovations";
-}
-
 function money(formData: FormData, key: string) {
   const value = Number(String(formData.get(key) ?? "0"));
   return Number.isFinite(value) ? Math.round(value * 100) : 0;
@@ -51,7 +47,6 @@ export async function createRenovationProject(formData: FormData) {
   revalidatePath("/renovations");
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
-  redirect(path(home.id));
 }
 
 export async function updateRenovationProject(formData: FormData) {
@@ -78,7 +73,6 @@ export async function updateRenovationProject(formData: FormData) {
 
   revalidatePath("/renovations");
   revalidatePath("/dashboard");
-  redirect(path(homeId));
 }
 
 export async function deleteRenovationProject(formData: FormData) {
@@ -87,9 +81,13 @@ export async function deleteRenovationProject(formData: FormData) {
   if (!id) redirect("/renovations");
 
   const supabase = await createClient();
-  await supabase.from("renovation_projects").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+  await supabase
+    .from("renovation_projects")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("home_id", homeId);
 
   revalidatePath("/renovations");
+  revalidatePath("/expenses");
   revalidatePath("/dashboard");
-  redirect(path(homeId));
 }

@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getHome } from "@/features/homes/queries";
-import { priceTotal, type PriceBasis } from "@/features/planning/pricing";
+import {
+  installationTotal,
+  priceTotal,
+  type PriceBasis,
+} from "@/features/planning/pricing";
 import { addTimelineEvent } from "@/features/timeline/add-event";
 import { createClient } from "@/lib/supabase/server";
 
@@ -58,6 +62,10 @@ function quantity(formData: FormData) {
   return Number.isInteger(value) && value >= 1 ? value : 1;
 }
 
+function hasInstallation(formData: FormData) {
+  return String(formData.get("has_installation") ?? "true") !== "false";
+}
+
 function priceBasis(
   formData: FormData,
   key: string,
@@ -91,7 +99,6 @@ export async function createComparisonPlan(formData: FormData) {
   if (error) redirect(insertErrorPath(home.id, error.code));
 
   revalidatePath("/planning");
-  redirect(path(home.id));
 }
 
 export async function startShoppingComparison(formData: FormData) {
@@ -196,7 +203,6 @@ export async function updateComparisonPlan(formData: FormData) {
   if (error) redirect(insertErrorPath(homeId, error.code));
 
   revalidatePath("/planning");
-  redirect(path(homeId));
 }
 
 export async function createComparisonOption(formData: FormData) {
@@ -219,6 +225,7 @@ export async function createComparisonOption(formData: FormData) {
     .maybeSingle();
   if (!plan) redirect(path(homeId));
 
+  const includesInstallation = hasInstallation(formData);
   const { error } = await supabase.from("comparison_options").insert({
     comparison_plan_id: plan.id,
     home_id: homeId,
@@ -231,12 +238,13 @@ export async function createComparisonOption(formData: FormData) {
       "per_unit",
     ),
     quantity: quantity(formData),
-    installation_price_minor: money(formData, "installation_price"),
-    installation_price_basis: priceBasis(
-      formData,
-      "installation_price_basis",
-      "total",
-    ),
+    has_installation: includesInstallation,
+    installation_price_minor: includesInstallation
+      ? money(formData, "installation_price")
+      : 0,
+    installation_price_basis: includesInstallation
+      ? priceBasis(formData, "installation_price_basis", "total")
+      : "total",
     currency: home.default_currency,
     product_url: String(formData.get("product_url") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
@@ -244,7 +252,6 @@ export async function createComparisonOption(formData: FormData) {
   if (error) redirect(insertErrorPath(homeId, error.code));
 
   revalidatePath("/planning");
-  redirect(path(homeId));
 }
 
 export async function updateComparisonOption(formData: FormData) {
@@ -265,6 +272,7 @@ export async function updateComparisonOption(formData: FormData) {
     .maybeSingle();
   if (!plan) redirect(path(homeId));
 
+  const includesInstallation = hasInstallation(formData);
   const { error } = await supabase
     .from("comparison_options")
     .update({
@@ -277,12 +285,13 @@ export async function updateComparisonOption(formData: FormData) {
         "per_unit",
       ),
       quantity: quantity(formData),
-      installation_price_minor: money(formData, "installation_price"),
-      installation_price_basis: priceBasis(
-        formData,
-        "installation_price_basis",
-        "total",
-      ),
+      has_installation: includesInstallation,
+      installation_price_minor: includesInstallation
+        ? money(formData, "installation_price")
+        : 0,
+      installation_price_basis: includesInstallation
+        ? priceBasis(formData, "installation_price_basis", "total")
+        : "total",
       product_url: String(formData.get("product_url") ?? "").trim() || null,
       notes: String(formData.get("notes") ?? "").trim() || null,
     })
@@ -294,7 +303,6 @@ export async function updateComparisonOption(formData: FormData) {
   if (error) redirect(insertErrorPath(homeId, error.code));
 
   revalidatePath("/planning");
-  redirect(path(homeId));
 }
 
 export async function confirmComparisonOption(formData: FormData) {
@@ -317,7 +325,7 @@ export async function confirmComparisonOption(formData: FormData) {
     supabase
       .from("comparison_options")
       .select(
-        "id,comparison_plan_id,provider_name,item_name,product_price_minor,product_price_basis,quantity,installation_price_minor,installation_price_basis,product_url,notes",
+        "id,comparison_plan_id,provider_name,item_name,product_price_minor,product_price_basis,quantity,has_installation,installation_price_minor,installation_price_basis,product_url,notes",
       )
       .eq("id", optionId)
       .eq("comparison_plan_id", planId)
@@ -331,12 +339,13 @@ export async function confirmComparisonOption(formData: FormData) {
     option.quantity,
     option.product_price_basis,
   );
-  const installationTotal = priceTotal(
+  const installationPriceTotal = installationTotal(
+    option.has_installation,
     option.installation_price_minor,
     option.quantity,
     option.installation_price_basis,
   );
-  const total = productTotal + installationTotal;
+  const total = productTotal + installationPriceTotal;
   const detail = [`เลือกจาก ${option.provider_name}`, option.notes, plan.notes]
     .filter(Boolean)
     .join(" · ");
@@ -445,7 +454,6 @@ export async function confirmComparisonOption(formData: FormData) {
   revalidatePath(destinationRoutes[destinationType]);
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
-  redirect(path(homeId));
 }
 
 export async function cancelComparisonConfirmation(formData: FormData) {
@@ -541,7 +549,6 @@ export async function cancelComparisonConfirmation(formData: FormData) {
   revalidatePath(destinationRoutes[destinationType]);
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
-  redirect(`/planning?homeId=${homeId}&view=comparing#${plan.id}`);
 }
 
 export async function deleteComparisonOption(formData: FormData) {

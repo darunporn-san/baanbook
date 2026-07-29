@@ -11,6 +11,7 @@ export type ComparisonOption = {
   product_price_minor: number;
   product_price_basis: PriceBasis;
   quantity: number;
+  has_installation: boolean;
   installation_price_minor: number;
   installation_price_basis: PriceBasis;
   currency: string;
@@ -75,10 +76,10 @@ export async function listComparisonPlans(
   );
   if (!activePlans.length) return [];
 
-  const { data: options } = await supabase
+  const { data: currentOptions, error: optionsError } = await supabase
     .from("comparison_options")
     .select(
-      "id,comparison_plan_id,home_id,provider_name,item_name,product_price_minor,product_price_basis,quantity,installation_price_minor,installation_price_basis,currency,product_url,notes,is_selected",
+      "id,comparison_plan_id,home_id,provider_name,item_name,product_price_minor,product_price_basis,quantity,has_installation,installation_price_minor,installation_price_basis,currency,product_url,notes,is_selected",
     )
     .in(
       "comparison_plan_id",
@@ -86,6 +87,26 @@ export async function listComparisonPlans(
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
+  let options = currentOptions;
+
+  if (optionsError?.message.includes("has_installation")) {
+    const { data: compatibleOptions } = await supabase
+      .from("comparison_options")
+      .select(
+        "id,comparison_plan_id,home_id,provider_name,item_name,product_price_minor,product_price_basis,quantity,installation_price_minor,installation_price_basis,currency,product_url,notes,is_selected",
+      )
+      .in(
+        "comparison_plan_id",
+        activePlans.map((plan) => plan.id),
+      )
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true });
+
+    options = (compatibleOptions ?? []).map((option) => ({
+      ...option,
+      has_installation: true,
+    }));
+  }
 
   return activePlans.map((plan) => ({
     ...plan,

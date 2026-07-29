@@ -3,6 +3,7 @@ import { CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EditComparisonOptionDialog } from "@/components/planning/edit-comparison-option-dialog";
 import { EditComparisonPlanDialog } from "@/components/planning/edit-comparison-plan-dialog";
+import { InstallationFields } from "@/components/planning/installation-fields";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   Card,
@@ -21,13 +22,17 @@ import {
   deleteComparisonPlan,
 } from "@/features/planning/actions";
 import { listComparisonPlans } from "@/features/planning/queries";
-import { priceTotal } from "@/features/planning/pricing";
+import {
+  installationTotal,
+  priceTotal,
+} from "@/features/planning/pricing";
 import { listRooms } from "@/features/rooms/queries";
 import { formatMoney } from "@/lib/format";
 import {
   MobileCreateTrigger,
   ResponsiveCreatePanel,
 } from "@/components/ui/mobile-create-dialog";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 
 const destinationLabels = {
   shopping: "รายการซื้อ",
@@ -162,7 +167,8 @@ export default async function PlanningPage({
                       option.quantity,
                       option.product_price_basis,
                     ) +
-                    priceTotal(
+                    installationTotal(
+                      option.has_installation,
                       option.installation_price_minor,
                       option.quantity,
                       option.installation_price_basis,
@@ -190,9 +196,14 @@ export default async function PlanningPage({
                             name="home_id"
                             value={plan.home_id}
                           />
-                          <Button size="sm" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            pendingText="กำลังยกเลิก..."
+                          >
                             ยกเลิกการยืนยัน
                           </Button>
+                          <SubmitLoadingOverlay label="กำลังยกเลิกการยืนยัน" />
                         </form>
                       )}
                       <form action={deleteComparisonPlan}>
@@ -202,9 +213,14 @@ export default async function PlanningPage({
                           name="home_id"
                           value={plan.home_id}
                         />
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          pendingText="กำลังลบ..."
+                        >
                           ลบแผน
                         </Button>
+                        <SubmitLoadingOverlay label="กำลังลบแผน" />
                       </form>
                     </div>
                     <details open>
@@ -263,12 +279,14 @@ export default async function PlanningPage({
                                 option.quantity,
                                 option.product_price_basis,
                               );
-                              const installationTotal = priceTotal(
+                              const installationPriceTotal = installationTotal(
+                                option.has_installation,
                                 option.installation_price_minor,
                                 option.quantity,
                                 option.installation_price_basis,
                               );
-                              const total = productTotal + installationTotal;
+                              const total =
+                                productTotal + installationPriceTotal;
                               const selected =
                                 plan.selected_option_id === option.id;
 
@@ -337,40 +355,47 @@ export default async function PlanningPage({
                                         )}
                                       </p>
                                     </div>
-                                    <div className="rounded-md bg-secondary/60 p-2">
-                                      <p className="text-[11px] text-muted-foreground">
-                                        ค่าติดตั้ง
-                                        {option.installation_price_basis ===
-                                        "per_unit"
-                                          ? "/ชิ้น"
-                                          : "รวม"}
-                                      </p>
-                                      <p className="mt-1 font-medium">
-                                        {formatMoney(
-                                          option.installation_price_minor,
-                                          option.currency,
-                                        )}
-                                      </p>
-                                    </div>
-                                    <div className="rounded-md bg-secondary/60 p-2">
-                                      <p className="text-[11px] text-muted-foreground">
-                                        รวมติดตั้ง
-                                      </p>
-                                      <p className="mt-1 font-medium">
-                                        {formatMoney(
-                                          installationTotal,
-                                          option.currency,
-                                        )}
-                                      </p>
-                                    </div>
-                                    <div className="rounded-md bg-[#fff5d8] p-2 text-[#705b2f]">
-                                      <p className="text-[11px] opacity-75">
-                                        รวม
-                                      </p>
-                                      <p className="mt-1 font-semibold">
-                                        {formatMoney(total, option.currency)}
-                                      </p>
-                                    </div>
+                                    {option.has_installation ? (
+                                      <>
+                                        <div className="rounded-md bg-secondary/60 p-2">
+                                          <p className="text-[11px] text-muted-foreground">
+                                            ค่าติดตั้ง
+                                            {option.installation_price_basis ===
+                                            "per_unit"
+                                              ? "/ชิ้น"
+                                              : "รวม"}
+                                          </p>
+                                          <p className="mt-1 font-medium">
+                                            {formatMoney(
+                                              option.installation_price_minor,
+                                              option.currency,
+                                            )}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-md bg-secondary/60 p-2">
+                                          <p className="text-[11px] text-muted-foreground">
+                                            รวมติดตั้ง
+                                          </p>
+                                          <p className="mt-1 font-medium">
+                                            {formatMoney(
+                                              installationPriceTotal,
+                                              option.currency,
+                                            )}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-md bg-[#fff5d8] p-2 text-[#705b2f]">
+                                          <p className="text-[11px] opacity-75">
+                                            รวม
+                                          </p>
+                                          <p className="mt-1 font-semibold">
+                                            {formatMoney(
+                                              total,
+                                              option.currency,
+                                            )}
+                                          </p>
+                                        </div>
+                                      </>
+                                    ) : null}
                                   </div>
 
                                   {option.notes ? (
@@ -410,9 +435,14 @@ export default async function PlanningPage({
                                             name="home_id"
                                             value={plan.home_id}
                                           />
-                                          <Button size="sm" variant="ghost">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            pendingText="กำลังลบ..."
+                                          >
                                             ลบ
                                           </Button>
+                                          <SubmitLoadingOverlay label="กำลังลบตัวเลือก" />
                                         </form>
                                         <form action={confirmComparisonOption}>
                                           <input
@@ -430,7 +460,13 @@ export default async function PlanningPage({
                                             name="option_id"
                                             value={option.id}
                                           />
-                                          <Button size="sm">ยืนยันเลือก</Button>
+                                          <Button
+                                            size="sm"
+                                            pendingText="กำลังยืนยัน..."
+                                          >
+                                            ยืนยันเลือก
+                                          </Button>
+                                          <SubmitLoadingOverlay label="กำลังยืนยันตัวเลือก" />
                                         </form>
                                       </div>
                                     ) : null}
@@ -499,19 +535,6 @@ export default async function PlanningPage({
                                   ราคาสินค้า: รวมทั้งหมด
                                 </option>
                               </select>
-                              <select
-                                name="installation_price_basis"
-                                defaultValue="total"
-                                aria-label="รูปแบบค่าติดตั้ง"
-                                className={fieldClass}
-                              >
-                                <option value="per_unit">
-                                  ค่าติดตั้ง: แยกต่อชิ้น
-                                </option>
-                                <option value="total">
-                                  ค่าติดตั้ง: รวมทั้งหมด
-                                </option>
-                              </select>
                               <input
                                 name="product_price"
                                 type="number"
@@ -520,14 +543,7 @@ export default async function PlanningPage({
                                 placeholder="ราคาสินค้า"
                                 className={fieldClass}
                               />
-                              <input
-                                name="installation_price"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="ค่าติดตั้ง"
-                                className={fieldClass}
-                              />
+                              <InstallationFields />
                               <input
                                 name="product_url"
                                 type="url"
@@ -544,9 +560,11 @@ export default async function PlanningPage({
                                 type="submit"
                                 size="sm"
                                 className="sm:col-span-2"
+                                pendingText="กำลังเพิ่มตัวเลือก..."
                               >
                                 เพิ่มตัวเลือก
                               </Button>
+                              <SubmitLoadingOverlay label="กำลังเพิ่มตัวเลือก" />
                             </form>
                           </details>
                         ) : plan.destination_id ? (
@@ -636,9 +654,14 @@ export default async function PlanningPage({
                       className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm"
                     />
                   </label>
-                  <Button type="submit" className="mt-1 w-full">
+                  <Button
+                    type="submit"
+                    className="mt-1 w-full"
+                    pendingText="กำลังสร้างแผน..."
+                  >
                     สร้างแผน
                   </Button>
+                  <SubmitLoadingOverlay label="กำลังสร้างแผนเปรียบเทียบ" />
                 </form>
               ) : (
                 <p className="text-sm text-muted-foreground">

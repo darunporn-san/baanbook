@@ -54,7 +54,6 @@ export async function createShoppingItem(formData: FormData) {
   revalidatePath("/shopping");
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
-  redirect(path(home.id));
 }
 
 export async function markShoppingItemBought(formData: FormData) {
@@ -81,7 +80,7 @@ export async function markShoppingItemBought(formData: FormData) {
   const [{ data: item }, { data: pendingPlan }] = await Promise.all([
     supabase
       .from("shopping_items")
-      .select("id,home_id,room_id,title,status,vendor")
+      .select("id,home_id,room_id,renovation_project_id,title,status,vendor")
       .eq("id", id)
       .eq("home_id", home.id)
       .eq("status", "planned")
@@ -120,6 +119,7 @@ export async function markShoppingItemBought(formData: FormData) {
   const expensePayload = {
     home_id: home.id,
     room_id: item.room_id,
+    renovation_project_id: item.renovation_project_id,
     title: item.title,
     category: "household_supply",
     amount_minor: amountMinor,
@@ -170,7 +170,7 @@ export async function markShoppingItemBought(formData: FormData) {
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
-  redirect(path(home.id));
+  revalidatePath("/renovations");
 }
 
 export async function updateShoppingItem(formData: FormData) {
@@ -199,7 +199,6 @@ export async function updateShoppingItem(formData: FormData) {
 
   revalidatePath("/shopping");
   revalidatePath("/dashboard");
-  redirect(path(homeId));
 }
 
 export async function deleteShoppingItem(formData: FormData) {
@@ -281,5 +280,4 @@ export async function deleteShoppingItem(formData: FormData) {
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
-  redirect(path(homeId));
 }

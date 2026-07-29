@@ -4,12 +4,24 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getHome } from "@/features/homes/queries";
 import { addTimelineEvent } from "@/features/timeline/add-event";
-import { getInstallmentEndDate } from "@/lib/installments";
+import {
+  getInstallmentEndDate,
+  getInstallmentPaidAmount,
+} from "@/lib/installments";
 import { createClient } from "@/lib/supabase/server";
 
-function expensesPath(homeId: string) {
-  return homeId ? `/expenses?homeId=${homeId}` : "/expenses";
+function expensesPath(homeId: string, error?: string) {
+  const params = new URLSearchParams();
+  if (homeId) params.set("homeId", homeId);
+  if (error) params.set("error", error);
+  const query = params.toString();
+  return query ? `/expenses?${query}` : "/expenses";
 }
+
+const paymentPlanMigrationError =
+  "ยังไม่ได้อัปเดตฐานข้อมูลสำหรับการจ่ายเป็นงวด กรุณารัน migration ล่าสุดก่อน";
+const renovationLinkMigrationError =
+  "ยังไม่ได้อัปเดตฐานข้อมูลสำหรับเชื่อมโปรเจกต์รีโนเวท กรุณารัน migration ล่าสุดก่อน";
 
 export async function setExpenseBudget(formData: FormData) {
   const homeId = String(formData.get("home_id") ?? "");
@@ -78,27 +90,43 @@ export async function addExpenseBudget(formData: FormData) {
 }
 
 function installmentValues(formData: FormData) {
+  const paymentPlanType = String(formData.get("payment_plan_type") ?? "");
   const rawMonths = String(formData.get("installment_months") ?? "").trim();
   const rawAmount = String(formData.get("installment_amount") ?? "").trim();
   const startDate =
-    String(formData.get("installment_start_date") ?? "").trim() || null;
+    String(formData.get("installment_start_date") ?? "").trim() ||
+    String(formData.get("expense_date") ?? "").trim() ||
+    null;
   const months = Number(rawMonths);
   const amount = Number(rawAmount);
   const endDate = getInstallmentEndDate(startDate, months);
 
-  return rawMonths &&
+  if (paymentPlanType === "staged") {
+    return {
+      payment_plan_type: "staged",
+      installment_months: null,
+      installment_amount_minor: null,
+      installment_start_date: null,
+      installment_end_date: null,
+    };
+  }
+
+  return paymentPlanType === "monthly" &&
+    rawMonths &&
     rawAmount &&
     Number.isInteger(months) &&
     months > 0 &&
     Number.isFinite(amount) &&
     amount >= 0
     ? {
+        payment_plan_type: "monthly",
         installment_months: months,
         installment_amount_minor: Math.round(amount * 100),
         installment_start_date: endDate ? startDate : null,
         installment_end_date: endDate,
       }
     : {
+        payment_plan_type: null,
         installment_months: null,
         installment_amount_minor: null,
         installment_start_date: null,
@@ -115,6 +143,8 @@ export async function createExpense(formData: FormData) {
   if (!home || !title || !Number.isFinite(amount)) redirect("/expenses");
 
   const rawRoomId = String(formData.get("room_id") ?? "") || null;
+  const rawRenovationProjectId =
+    String(formData.get("renovation_project_id") ?? "") || null;
   const category =
     String(formData.get("category") ?? "other").trim() || "other";
   const notes = String(formData.get("notes") ?? "").trim() || null;
@@ -153,11 +183,21 @@ export async function createExpense(formData: FormData) {
         .maybeSingle()
     : { data: null };
   const roomId = room?.id ?? null;
+  const { data: renovationProject } = rawRenovationProjectId
+    ? await supabase
+        .from("renovation_projects")
+        .select("id")
+        .eq("id", rawRenovationProjectId)
+        .eq("home_id", home.id)
+        .is("deleted_at", null)
+        .maybeSingle()
+    : { data: null };
   const { data: insertedData, error } = await supabase
     .from("expenses")
     .insert({
       home_id: home.id,
       room_id: roomId,
+      renovation_project_id: renovationProject?.id ?? null,
       title,
       category,
       amount_minor: amountMinor,
@@ -166,18 +206,27 @@ export async function createExpense(formData: FormData) {
       notes,
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
-      is_paid: isPaid,
+      is_paid: installments.payment_plan_type === "staged" ? false : isPaid,
       ...installments,
     })
     .select("id")
     .single();
   let data = insertedData;
 
+  if (error?.message.includes("renovation_project_id")) {
+    redirect(expensesPath(home.id, renovationLinkMigrationError));
+  }
+
+  if (error?.message.includes("payment_plan_type")) {
+    redirect(expensesPath(home.id, paymentPlanMigrationError));
+  }
+
   if (
     error?.message.includes("notes") ||
     error?.message.includes("appointment_date") ||
     error?.message.includes("appointment_time") ||
     error?.message.includes("is_paid") ||
+    error?.message.includes("payment_plan_type") ||
     error?.message.includes("installment_months") ||
     error?.message.includes("installment_amount_minor") ||
     error?.message.includes("installment_start_date") ||
@@ -244,6 +293,7 @@ export async function createExpense(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
   revalidatePath("/warranty");
+  revalidatePath("/renovations");
 }
 
 export async function updateExpense(formData: FormData) {
@@ -254,11 +304,24 @@ export async function updateExpense(formData: FormData) {
   if (!id || !title || !Number.isFinite(amount)) redirect("/expenses");
 
   const supabase = await createClient();
+  const installments = installmentValues(formData);
+  const rawRenovationProjectId =
+    String(formData.get("renovation_project_id") ?? "") || null;
+  const { data: renovationProject } = rawRenovationProjectId
+    ? await supabase
+        .from("renovation_projects")
+        .select("id")
+        .eq("id", rawRenovationProjectId)
+        .eq("home_id", homeId)
+        .is("deleted_at", null)
+        .maybeSingle()
+    : { data: null };
   const { error } = await supabase
     .from("expenses")
     .update({
       title,
       room_id: String(formData.get("room_id") ?? "") || null,
+      renovation_project_id: renovationProject?.id ?? null,
       category: String(formData.get("category") ?? "other").trim() || "other",
       amount_minor: Math.round(amount * 100),
       expense_date:
@@ -268,16 +331,28 @@ export async function updateExpense(formData: FormData) {
       appointment_date: String(formData.get("appointment_date") ?? "") || null,
       appointment_time:
         String(formData.get("appointment_time") ?? "").trim() || null,
-      is_paid: String(formData.get("is_paid") ?? "true") !== "false",
-      ...installmentValues(formData),
+      is_paid:
+        installments.payment_plan_type === "staged"
+          ? false
+          : String(formData.get("is_paid") ?? "true") !== "false",
+      ...installments,
     })
     .eq("id", id);
+
+  if (error?.message.includes("renovation_project_id")) {
+    redirect(expensesPath(homeId, renovationLinkMigrationError));
+  }
+
+  if (error?.message.includes("payment_plan_type")) {
+    redirect(expensesPath(homeId, paymentPlanMigrationError));
+  }
 
   if (
     error?.message.includes("notes") ||
     error?.message.includes("appointment_date") ||
     error?.message.includes("appointment_time") ||
     error?.message.includes("is_paid") ||
+    error?.message.includes("payment_plan_type") ||
     error?.message.includes("installment_months") ||
     error?.message.includes("installment_amount_minor") ||
     error?.message.includes("installment_start_date") ||
@@ -302,7 +377,161 @@ export async function updateExpense(formData: FormData) {
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
-  redirect(expensesPath(homeId));
+  revalidatePath("/renovations");
+}
+
+export async function addExpenseInstallmentPayment(formData: FormData) {
+  const expenseId = String(formData.get("expense_id") ?? "");
+  const homeId = String(formData.get("home_id") ?? "");
+  const paymentDate = String(formData.get("payment_date") ?? "");
+  const amount = Number(String(formData.get("amount") ?? ""));
+  const amountMinor = Math.round(amount * 100);
+  if (
+    !expenseId ||
+    !homeId ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) ||
+    !Number.isFinite(amount) ||
+    amountMinor <= 0
+  ) {
+    redirect(expensesPath(homeId));
+  }
+
+  const supabase = await createClient();
+  const { data: expense } = await supabase
+    .from("expenses")
+    .select("id,amount_minor,payment_plan_type")
+    .eq("id", expenseId)
+    .eq("home_id", homeId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!expense || expense.payment_plan_type !== "staged") {
+    redirect(expensesPath(homeId));
+  }
+
+  const { data: existingPayments } = await supabase
+    .from("expense_installment_payments")
+    .select("amount_minor")
+    .eq("expense_id", expense.id);
+  const paidMinor = getInstallmentPaidAmount(existingPayments ?? []);
+  if (amountMinor > expense.amount_minor - paidMinor) {
+    redirect(expensesPath(homeId));
+  }
+
+  const { error } = await supabase.from("expense_installment_payments").insert({
+    expense_id: expense.id,
+    payment_date: paymentDate,
+    amount_minor: amountMinor,
+  });
+  if (!error) {
+    await supabase
+      .from("expenses")
+      .update({ is_paid: paidMinor + amountMinor >= expense.amount_minor })
+      .eq("id", expense.id);
+  }
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function updateExpenseInstallmentPayment(formData: FormData) {
+  const paymentId = String(formData.get("payment_id") ?? "");
+  const expenseId = String(formData.get("expense_id") ?? "");
+  const homeId = String(formData.get("home_id") ?? "");
+  const paymentDate = String(formData.get("payment_date") ?? "");
+  const amount = Number(String(formData.get("amount") ?? ""));
+  const amountMinor = Math.round(amount * 100);
+  if (
+    !paymentId ||
+    !expenseId ||
+    !homeId ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) ||
+    !Number.isFinite(amount) ||
+    amountMinor <= 0
+  ) {
+    redirect(expensesPath(homeId));
+  }
+
+  const supabase = await createClient();
+  const { data: expense } = await supabase
+    .from("expenses")
+    .select("id,amount_minor,payment_plan_type")
+    .eq("id", expenseId)
+    .eq("home_id", homeId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!expense || expense.payment_plan_type !== "staged") {
+    redirect(expensesPath(homeId));
+  }
+
+  const { data: payments } = await supabase
+    .from("expense_installment_payments")
+    .select("id,amount_minor")
+    .eq("expense_id", expense.id);
+  if (!payments?.some((payment) => payment.id === paymentId)) {
+    redirect(expensesPath(homeId));
+  }
+
+  const otherPaidMinor = getInstallmentPaidAmount(
+    payments.filter((payment) => payment.id !== paymentId),
+  );
+  if (amountMinor > expense.amount_minor - otherPaidMinor) {
+    redirect(expensesPath(homeId));
+  }
+
+  const { error } = await supabase
+    .from("expense_installment_payments")
+    .update({ payment_date: paymentDate, amount_minor: amountMinor })
+    .eq("id", paymentId)
+    .eq("expense_id", expense.id);
+  if (!error) {
+    await supabase
+      .from("expenses")
+      .update({
+        is_paid: otherPaidMinor + amountMinor >= expense.amount_minor,
+      })
+      .eq("id", expense.id);
+  }
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteExpenseInstallmentPayment(formData: FormData) {
+  const paymentId = String(formData.get("payment_id") ?? "");
+  const expenseId = String(formData.get("expense_id") ?? "");
+  const homeId = String(formData.get("home_id") ?? "");
+  if (!paymentId || !expenseId || !homeId) redirect(expensesPath(homeId));
+
+  const supabase = await createClient();
+  const { data: expense } = await supabase
+    .from("expenses")
+    .select("id,amount_minor")
+    .eq("id", expenseId)
+    .eq("home_id", homeId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!expense) redirect(expensesPath(homeId));
+
+  await supabase
+    .from("expense_installment_payments")
+    .delete()
+    .eq("id", paymentId)
+    .eq("expense_id", expense.id);
+  const { data: remainingPayments } = await supabase
+    .from("expense_installment_payments")
+    .select("amount_minor")
+    .eq("expense_id", expense.id);
+  await supabase
+    .from("expenses")
+    .update({
+      is_paid:
+        getInstallmentPaidAmount(remainingPayments ?? []) >=
+        expense.amount_minor,
+    })
+    .eq("id", expense.id);
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
 }
 
 export async function updateApplianceExpense(formData: FormData) {
@@ -310,6 +539,8 @@ export async function updateApplianceExpense(formData: FormData) {
   const applianceId = String(formData.get("appliance_id") ?? "");
   const homeId = String(formData.get("home_id") ?? "");
   const roomId = String(formData.get("room_id") ?? "") || null;
+  const rawRenovationProjectId =
+    String(formData.get("renovation_project_id") ?? "") || null;
   const title = String(formData.get("title") ?? "").trim();
   const amount = Number(String(formData.get("amount") ?? "0"));
   const expenseDate =
@@ -331,18 +562,28 @@ export async function updateApplianceExpense(formData: FormData) {
   if (!title || !Number.isFinite(amount)) redirect(expensesPath(homeId));
 
   const supabase = await createClient();
+  const { data: renovationProject } = rawRenovationProjectId
+    ? await supabase
+        .from("renovation_projects")
+        .select("id")
+        .eq("id", rawRenovationProjectId)
+        .eq("home_id", homeId)
+        .is("deleted_at", null)
+        .maybeSingle()
+    : { data: null };
 
   if (expenseId) {
     const expenseUpdate = {
       title,
       room_id: roomId,
+      renovation_project_id: renovationProject?.id ?? null,
       category: "appliance",
       amount_minor: Math.round(amount * 100),
       expense_date: expenseDate,
       notes,
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
-      is_paid: isPaid,
+      is_paid: installments.payment_plan_type === "staged" ? false : isPaid,
       ...installments,
     };
     const { error } = await supabase
@@ -350,11 +591,20 @@ export async function updateApplianceExpense(formData: FormData) {
       .update(expenseUpdate)
       .eq("id", expenseId);
 
+    if (error?.message.includes("renovation_project_id")) {
+      redirect(expensesPath(homeId, renovationLinkMigrationError));
+    }
+
+    if (error?.message.includes("payment_plan_type")) {
+      redirect(expensesPath(homeId, paymentPlanMigrationError));
+    }
+
     if (
       error?.message.includes("notes") ||
       error?.message.includes("appointment_date") ||
       error?.message.includes("appointment_time") ||
       error?.message.includes("is_paid") ||
+      error?.message.includes("payment_plan_type") ||
       error?.message.includes("installment_months") ||
       error?.message.includes("installment_amount_minor") ||
       error?.message.includes("installment_start_date") ||
@@ -371,8 +621,8 @@ export async function updateApplianceExpense(formData: FormData) {
           ...(error.message.includes("notes")
             ? {}
             : { notes: expenseUpdate.notes }),
-      })
-      .eq("id", expenseId);
+        })
+        .eq("id", expenseId);
     }
   } else if (applianceId) {
     const home = await getHome(homeId);
@@ -383,6 +633,7 @@ export async function updateApplianceExpense(formData: FormData) {
       .insert({
         home_id: home.id,
         room_id: roomId,
+        renovation_project_id: renovationProject?.id ?? null,
         title,
         category: "appliance",
         amount_minor: Math.round(amount * 100),
@@ -391,7 +642,7 @@ export async function updateApplianceExpense(formData: FormData) {
         notes,
         appointment_date: appointmentDate,
         appointment_time: appointmentTime,
-        is_paid: isPaid,
+        is_paid: installments.payment_plan_type === "staged" ? false : isPaid,
         ...installments,
       })
       .select("id")
@@ -434,7 +685,7 @@ export async function updateApplianceExpense(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
   revalidatePath("/warranty");
-  redirect(expensesPath(homeId));
+  revalidatePath("/renovations");
 }
 
 export async function deleteExpense(formData: FormData) {
@@ -450,6 +701,7 @@ export async function deleteExpense(formData: FormData) {
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/renovations");
   redirect(expensesPath(homeId));
 }
 

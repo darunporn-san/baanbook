@@ -9,9 +9,7 @@ export function getInstallmentEndDate(
 
   const targetMonth = month - 1 + months! - 1;
   const lastDay = new Date(Date.UTC(year, targetMonth + 1, 0)).getUTCDate();
-  const endDate = new Date(
-    Date.UTC(year, targetMonth, Math.min(day, lastDay)),
-  );
+  const endDate = new Date(Date.UTC(year, targetMonth, Math.min(day, lastDay)));
 
   return endDate.toISOString().slice(0, 10);
 }
@@ -23,6 +21,18 @@ export function isInstallmentDone(
   return Boolean(endDate && endDate < today);
 }
 
+export function isMonthlyInstallmentDone(
+  paymentPlanType: string | null,
+  installmentMonths: number | null,
+  endDate: string | null,
+  today: string,
+) {
+  return Boolean(
+    (paymentPlanType === "monthly" || installmentMonths !== null) &&
+      isInstallmentDone(endDate, today),
+  );
+}
+
 export function isInstallmentDueInMonth(
   startDate: string | null | undefined,
   endDate: string | null | undefined,
@@ -30,8 +40,21 @@ export function isInstallmentDueInMonth(
 ) {
   return Boolean(
     startDate &&
-      endDate &&
-      startDate.slice(0, 7) <= month &&
-      endDate.slice(0, 7) >= month,
+    endDate &&
+    startDate.slice(0, 7) <= month &&
+    endDate.slice(0, 7) >= month,
   );
+}
+
+export function getInstallmentPaidAmount(
+  payments: ReadonlyArray<{ amount_minor: number }>,
+) {
+  return payments.reduce((sum, payment) => sum + payment.amount_minor, 0);
+}
+
+export function getInstallmentRemainingAmount(
+  totalMinor: number,
+  payments: ReadonlyArray<{ amount_minor: number }>,
+) {
+  return Math.max(0, totalMinor - getInstallmentPaidAmount(payments));
 }

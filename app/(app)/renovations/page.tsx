@@ -12,12 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { listHomes } from "@/features/homes/queries";
+import { listExpenses } from "@/features/expenses/queries";
 import {
   createRenovationProject,
   deleteRenovationProject,
   updateRenovationProject,
 } from "@/features/renovations/actions";
 import { listRenovationProjects } from "@/features/renovations/queries";
+import { getRenovationActualAmount } from "@/features/renovations/spending";
 import { listRooms } from "@/features/rooms/queries";
 import { formatDate, formatMoney } from "@/lib/format";
 import { commonText, getLabel, renovationStatusLabels } from "@/lib/labels";
@@ -45,14 +47,16 @@ export default async function RenovationsPage({
   const homes = await listHomes();
   const params = await searchParams;
   const home = homes.find((item) => item.id === params?.homeId) ?? homes[0];
-  const [rooms, projects] = await Promise.all([
+  const [rooms, projects, expenses] = await Promise.all([
     listRooms(home?.id),
     listRenovationProjects(home?.id),
+    listExpenses(home?.id, 500),
   ]);
   const totalBudget = projects.reduce(
     (sum, item) => sum + item.budget_minor,
     0,
   );
+  const totalActual = getRenovationActualAmount(expenses);
   const activeCount = projects.filter(
     (item) => item.status === "active",
   ).length;
@@ -85,7 +89,7 @@ export default async function RenovationsPage({
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
-          <section className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+          <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Card className="border-0 shadow-sm">
               <CardContent className="flex items-center gap-3 p-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fff0ed] text-[#b84e40]">
@@ -114,7 +118,7 @@ export default async function RenovationsPage({
                 </div>
               </CardContent>
             </Card>
-            <Card className="col-span-2 border-0 shadow-sm lg:col-span-1">
+            <Card className="border-0 shadow-sm">
               <CardContent className="flex items-center gap-3 p-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fff5d8] text-[#705b2f]">
                   <Wallet className="h-5 w-5" />
@@ -123,6 +127,19 @@ export default async function RenovationsPage({
                   <p className="text-xs text-muted-foreground">งบประมาณรวม</p>
                   <p className="mt-1 truncate text-xl font-semibold">
                     {formatMoney(totalBudget, home?.default_currency)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-sm">
+              <CardContent className="flex items-center gap-3 p-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e8f5f3] text-primary">
+                  <Wallet className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">ใช้จริงรวม</p>
+                  <p className="mt-1 truncate text-xl font-semibold text-primary">
+                    {formatMoney(totalActual, home?.default_currency)}
                   </p>
                 </div>
               </CardContent>
@@ -142,6 +159,15 @@ export default async function RenovationsPage({
             {projects.length ? (
               projects.map((project) => {
                 const room = rooms.find((item) => item.id === project.room_id);
+                const projectExpenses = expenses.filter(
+                  (expense) =>
+                    expense.renovation_project_id === project.id,
+                );
+                const actualMinor = getRenovationActualAmount(
+                  projectExpenses,
+                  project.id,
+                );
+                const remainingMinor = project.budget_minor - actualMinor;
 
                 return (
                   <Card
@@ -173,16 +199,46 @@ export default async function RenovationsPage({
                             </p>
                           ) : null}
                         </div>
-                        <div className="shrink-0 sm:text-right">
-                          <p className="text-xs text-muted-foreground">
-                            งบประมาณ
-                          </p>
-                          <p className="mt-1 text-lg font-semibold text-primary">
-                            {formatMoney(
-                              project.budget_minor,
-                              home?.default_currency,
-                            )}
-                          </p>
+                        <div className="grid shrink-0 grid-cols-3 gap-4 sm:text-right">
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              งบประมาณ
+                            </p>
+                            <p className="mt-1 font-semibold">
+                              {formatMoney(
+                                project.budget_minor,
+                                home?.default_currency,
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              ใช้จริง
+                            </p>
+                            <p className="mt-1 font-semibold text-primary">
+                              {formatMoney(
+                                actualMinor,
+                                home?.default_currency,
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              {remainingMinor >= 0 ? "คงเหลือ" : "เกินงบ"}
+                            </p>
+                            <p
+                              className={`mt-1 font-semibold ${
+                                remainingMinor < 0
+                                  ? "text-destructive"
+                                  : "text-primary"
+                              }`}
+                            >
+                              {formatMoney(
+                                Math.abs(remainingMinor),
+                                home?.default_currency,
+                              )}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
@@ -206,6 +262,11 @@ export default async function RenovationsPage({
                           </p>
                         </div>
                       </div>
+                      {projectExpenses.length ? (
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          เชื่อมแล้ว {projectExpenses.length} รายการค่าใช้จ่าย
+                        </p>
+                      ) : null}
 
                       <div className="mt-4 flex items-center justify-end gap-2 border-t pt-4">
                         <EditDialog

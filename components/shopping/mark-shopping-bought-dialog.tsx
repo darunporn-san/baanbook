@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 import { markShoppingItemBought } from "@/features/shopping/actions";
 import type { ShoppingItem } from "@/features/shopping/queries";
 import { formatMoney } from "@/lib/format";
@@ -111,6 +112,7 @@ export function MarkShoppingBoughtDialog({
               ยืนยันการซื้อ
             </Button>
           </div>
+          <SubmitLoadingOverlay label="กำลังบันทึกการซื้อ" />
         </form>
       </dialog>
     </>

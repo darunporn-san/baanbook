@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import {
   MobileCreateTrigger,
@@ -289,6 +290,7 @@ export default async function ShoppingPage({
                           <Button size="sm" variant="ghost">
                             {commonText.delete}
                           </Button>
+                          <SubmitLoadingOverlay label="กำลังลบรายการซื้อ" />
                         </form>
                       </div>
                     </div>
@@ -415,6 +417,7 @@ export default async function ShoppingPage({
                   <Button type="submit" pendingText="กำลังเพิ่มรายการ...">
                     เพิ่มรายการซื้อ
                   </Button>
+                  <SubmitLoadingOverlay label="กำลังเพิ่มรายการซื้อ" />
                 </form>
               ) : (
                 <p className="text-sm text-muted-foreground">

@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 import type { RenovationProject } from "@/features/renovations/queries";
 import type { Room } from "@/features/rooms/queries";
 import { updateShoppingItem } from "@/features/shopping/actions";
@@ -27,6 +28,10 @@ export function EditShoppingItemDialog({
 }) {
   const [editing, setEditing] = useState(false);
   const titleId = useId();
+  const handleUpdate = async (formData: FormData) => {
+    await updateShoppingItem(formData);
+    setEditing(false);
+  };
 
   return (
     <>
@@ -76,7 +81,7 @@ export function EditShoppingItemDialog({
             </div>
 
             <form
-              action={updateShoppingItem}
+              action={handleUpdate}
               className="grid max-h-[calc(100dvh-7rem)] gap-4 overflow-y-auto p-5 sm:grid-cols-2"
             >
               <input type="hidden" name="id" value={item.id} />
@@ -214,6 +219,7 @@ export function EditShoppingItemDialog({
                   บันทึกการแก้ไข
                 </Button>
               </div>
+              <SubmitLoadingOverlay label="กำลังบันทึกรายการซื้อ" />
             </form>
           </div>
         </div>

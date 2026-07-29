@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Expense } from "@/features/expenses/queries";
+import type {
+  Expense,
+  ExpenseInstallmentPayment,
+} from "@/features/expenses/queries";
 import type { Room } from "@/features/rooms/queries";
+import type { RenovationProject } from "@/features/renovations/queries";
 import {
   expenseCategoryGroups,
   getExpenseCategoryLabel,
@@ -13,33 +17,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InstallmentFields } from "@/components/expense/installment-fields";
+import { InstallmentPayments } from "@/components/expense/installment-payments";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 
 export function ExpenseRow({
   expense,
   rooms,
+  projects,
   appointmentDone = false,
   paymentUrgent = false,
   paymentDone,
+  installmentPayments,
+  today,
+  addInstallmentPaymentAction,
+  updateInstallmentPaymentAction,
+  deleteInstallmentPaymentAction,
   updateAction,
   deleteAction,
 }: {
   expense: Expense;
   rooms: Room[];
+  projects: RenovationProject[];
   appointmentDone?: boolean;
   paymentUrgent?: boolean;
   paymentDone?: boolean;
+  installmentPayments: ExpenseInstallmentPayment[];
+  today: string;
+  addInstallmentPaymentAction: (formData: FormData) => void;
+  updateInstallmentPaymentAction: (formData: FormData) => void;
+  deleteInstallmentPaymentAction: (formData: FormData) => void;
   updateAction: (formData: FormData) => void;
   deleteAction: (formData: FormData) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const effectivePaymentDone = paymentDone ?? expense.is_paid;
   const roomName = rooms.find((room) => room.id === expense.room_id)?.name;
+  const projectName = projects.find(
+    (project) => project.id === expense.renovation_project_id,
+  )?.name;
   const appointmentText = [
     expense.appointment_date ? formatDate(expense.appointment_date) : null,
     expense.appointment_time || null,
   ]
     .filter(Boolean)
     .join(" ");
+  const handleUpdate = async (formData: FormData) => {
+    await updateAction(formData);
+    setEditing(false);
+  };
 
   const editModal = editing ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
@@ -50,7 +75,7 @@ export function ExpenseRow({
         aria-label="ปิดฟอร์มแก้ไข"
       />
       <form
-        action={updateAction}
+        action={handleUpdate}
         className="relative z-10 grid max-h-[calc(100vh-1.5rem)] w-full max-w-5xl gap-5 overflow-y-auto overscroll-contain rounded-lg bg-white p-5 shadow-2xl sm:max-h-[calc(100vh-3rem)]"
         role="dialog"
         aria-modal="true"
@@ -104,9 +129,10 @@ export function ExpenseRow({
           defaultAmountMinor={expense.installment_amount_minor}
           defaultStartDate={expense.installment_start_date}
           defaultEndDate={expense.installment_end_date}
+          defaultPaymentPlanType={expense.payment_plan_type}
         />
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="space-y-2">
             <Label htmlFor={`expense-date-${expense.id}`}>วันที่</Label>
             <Input
@@ -147,6 +173,24 @@ export function ExpenseRow({
               {rooms.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`expense-project-${expense.id}`}>
+              โปรเจกต์รีโนเวท
+            </Label>
+            <select
+              id={`expense-project-${expense.id}`}
+              name="renovation_project_id"
+              defaultValue={expense.renovation_project_id ?? ""}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">ไม่เชื่อมโปรเจกต์</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
                 </option>
               ))}
             </select>
@@ -215,15 +259,18 @@ export function ExpenseRow({
           >
             {commonText.cancel}
           </Button>
-          <Button size="sm">{commonText.save}</Button>
+          <Button size="sm" pendingText="กำลังบันทึก...">
+            {commonText.save}
+          </Button>
         </div>
+        <SubmitLoadingOverlay label="กำลังบันทึกค่าใช้จ่าย" />
       </form>
     </div>
   ) : null;
 
   return (
     <>
-      <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="p-4">
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary">
@@ -235,15 +282,20 @@ export function ExpenseRow({
             <span className="text-xs text-muted-foreground">
               {roomName ?? commonText.noRoom}
             </span>
+            {projectName ? (
+              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary">
+                โปรเจกต์ {projectName}
+              </span>
+            ) : null}
             <span
               className={
                 effectivePaymentDone
                   ? "rounded-full bg-[#e8f5f3] px-3 py-1 text-xs font-semibold text-primary"
                   : expense.installment_end_date
                     ? "rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]"
-                  : paymentUrgent
-                    ? "rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700"
-                  : "rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]"
+                    : paymentUrgent
+                      ? "rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700"
+                      : "rounded-full bg-[#fff5d8] px-3 py-1 text-xs font-semibold text-[#705b2f]"
               }
             >
               {expense.installment_end_date
@@ -266,52 +318,69 @@ export function ExpenseRow({
               )
             ) : null}
           </div>
-          <div>
-            <p className="text-base font-semibold">{expense.title}</p>
-            <p className="mt-1 text-xl font-semibold text-primary">
-              {formatMoney(expense.amount_minor, expense.currency)}
-            </p>
-            {expense.installment_months &&
-            expense.installment_amount_minor !== null ? (
-              <p className="mt-1 text-sm font-medium text-[#705b2f]">
-                ผ่อน {expense.installment_months} เดือน · เดือนละ{" "}
-                {formatMoney(
-                  expense.installment_amount_minor,
-                  expense.currency,
-                )}
-                {expense.installment_start_date &&
-                expense.installment_end_date ? (
-                  <>
-                    {" "}
-                    · {formatDate(expense.installment_start_date)} –{" "}
-                    {formatDate(expense.installment_end_date)}
-                  </>
-                ) : null}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-base font-semibold">{expense.title}</p>
+              <p className="mt-1 text-xl font-semibold text-primary">
+                {formatMoney(expense.amount_minor, expense.currency)}
               </p>
-            ) : null}
-            {expense.notes ? (
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                {expense.notes}
-              </p>
-            ) : null}
+              {expense.installment_months &&
+              expense.installment_amount_minor !== null ? (
+                <p className="mt-1 text-sm font-medium text-[#705b2f]">
+                  ผ่อน {expense.installment_months} เดือน · เดือนละ{" "}
+                  {formatMoney(
+                    expense.installment_amount_minor,
+                    expense.currency,
+                  )}
+                  {expense.installment_start_date &&
+                  expense.installment_end_date ? (
+                    <>
+                      {" "}
+                      · {formatDate(expense.installment_start_date)} –{" "}
+                      {formatDate(expense.installment_end_date)}
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(true)}
+              >
+                {commonText.edit}
+              </Button>
+              <form action={deleteAction}>
+                <input type="hidden" name="id" value={expense.id} />
+                <input type="hidden" name="home_id" value={expense.home_id} />
+                <Button variant="ghost" size="sm">
+                  {commonText.delete}
+                </Button>
+              </form>
+            </div>
           </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setEditing(true)}
-          >
-            {commonText.edit}
-          </Button>
-          <form action={deleteAction}>
-            <input type="hidden" name="id" value={expense.id} />
-            <input type="hidden" name="home_id" value={expense.home_id} />
-            <Button variant="ghost" size="sm">
-              {commonText.delete}
-            </Button>
-          </form>
+          {expense.payment_plan_type === "staged" ? (
+            <InstallmentPayments
+              expenseId={expense.id}
+              homeId={expense.home_id}
+              totalMinor={expense.amount_minor}
+              currency={expense.currency}
+              isPaid={expense.is_paid}
+              installmentAmountMinor={expense.installment_amount_minor}
+              payments={installmentPayments}
+              today={today}
+              addAction={addInstallmentPaymentAction}
+              updateAction={updateInstallmentPaymentAction}
+              deleteAction={deleteInstallmentPaymentAction}
+            />
+          ) : null}
+          {expense.notes ? (
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {expense.notes}
+            </p>
+          ) : null}
         </div>
       </div>
       {editModal}

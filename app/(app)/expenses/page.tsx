@@ -14,24 +14,38 @@ import { HeaderHomeSwitcher } from "@/components/home/header-home-switcher";
 import { MobileCreateDialog } from "@/components/ui/mobile-create-dialog";
 import { listAppliances } from "@/features/appliances/queries";
 import {
+  addExpenseInstallmentPayment,
   addExpenseBudget,
   deleteApplianceExpense,
   deleteExpense,
+  deleteExpenseInstallmentPayment,
   setExpenseBudget,
   updateApplianceExpense,
   updateExpense,
+  updateExpenseInstallmentPayment,
 } from "@/features/expenses/actions";
-import { getExpenseBudget, listExpenses } from "@/features/expenses/queries";
+import {
+  getExpenseBudget,
+  listExpenseInstallmentPayments,
+  listExpenses,
+} from "@/features/expenses/queries";
 import { expenseCategoryGroups } from "@/features/expenses/categories";
 import { listHomes } from "@/features/homes/queries";
 import { listRooms } from "@/features/rooms/queries";
+import { listRenovationProjects } from "@/features/renovations/queries";
 import {
   getAppointmentDateTime,
   isAppointmentDone,
   isAppointmentDueWithinDays,
 } from "@/lib/appointments";
 import { formatMoney } from "@/lib/format";
-import { isInstallmentDone, isInstallmentDueInMonth } from "@/lib/installments";
+import {
+  getInstallmentPaidAmount,
+  getInstallmentRemainingAmount,
+  getInstallmentEndDate,
+  isInstallmentDueInMonth,
+  isMonthlyInstallmentDone,
+} from "@/lib/installments";
 
 export default async function ExpensesPage({
   searchParams,
@@ -45,6 +59,7 @@ export default async function ExpensesPage({
     roomId?: string;
     month?: string;
     payment?: "paid" | "unpaid";
+    error?: string;
   }>;
 }) {
   const homes = await listHomes();
@@ -59,15 +74,65 @@ export default async function ExpensesPage({
   }).format(now);
   const currentMonth = today.slice(0, 7);
   const rooms = await listRooms(home?.id);
-  const [expenses, appliances, expenseBudget] = await Promise.all([
+  const [expenses, appliances, expenseBudget, projects] = await Promise.all([
     listExpenses(home?.id, 500),
     listAppliances(home?.id),
     getExpenseBudget(home?.id),
+    listRenovationProjects(home?.id),
   ]);
+  const installmentPayments = await listExpenseInstallmentPayments(
+    expenses.map((expense) => expense.id),
+  );
+  // ponytail: the page is capped at 500 expenses; group by id if histories grow.
+  const paymentsFor = (expenseId: string) =>
+    installmentPayments.filter((payment) => payment.expense_id === expenseId);
+  const monthlySchedule = (expense: (typeof expenses)[number]) => {
+    const startDate =
+      expense.installment_start_date ?? expense.expense_date;
+    return {
+      startDate,
+      endDate:
+        expense.installment_end_date ??
+        getInstallmentEndDate(startDate, expense.installment_months),
+    };
+  };
+  const isMonthlyDone = (expense: (typeof expenses)[number]) =>
+    isMonthlyInstallmentDone(
+      expense.payment_plan_type,
+      expense.installment_months,
+      monthlySchedule(expense).endDate,
+      today,
+    );
+  const paidAmount = (expense: (typeof expenses)[number]) =>
+    expense.payment_plan_type === "staged"
+      ? Math.min(
+          expense.amount_minor,
+          getInstallmentPaidAmount(paymentsFor(expense.id)),
+        )
+      : expense.payment_plan_type === "monthly" ||
+          expense.installment_months !== null
+        ? isMonthlyDone(expense)
+          ? expense.amount_minor
+          : 0
+        : expense.is_paid
+        ? expense.amount_minor
+        : 0;
+  const remainingAmount = (expense: (typeof expenses)[number]) =>
+    expense.payment_plan_type === "staged"
+      ? getInstallmentRemainingAmount(
+          expense.amount_minor,
+          paymentsFor(expense.id),
+        )
+      : expense.payment_plan_type === "monthly" ||
+          expense.installment_months !== null
+        ? isMonthlyDone(expense)
+          ? 0
+          : expense.amount_minor
+        : expense.is_paid
+        ? 0
+        : expense.amount_minor;
   const isPaymentDone = (expense: (typeof expenses)[number]) =>
-    expense.installment_end_date
-      ? isInstallmentDone(expense.installment_end_date, today)
-      : expense.is_paid;
+    remainingAmount(expense) === 0;
   const paidExpenses = expenses.filter(isPaymentDone);
   const unpaidExpenses = expenses.filter((expense) => !isPaymentDone(expense));
   const currentMonthExpenses = expenses.filter((expense) =>
@@ -75,25 +140,29 @@ export default async function ExpensesPage({
   );
   const pendingThisMonthExpenses = expenses.filter((expense) => {
     if (isPaymentDone(expense)) return false;
+    if (expense.payment_plan_type === "staged") return false;
 
-    return expense.installment_amount_minor !== null
-      ? isInstallmentDueInMonth(
-          expense.installment_start_date,
-          expense.installment_end_date,
-          currentMonth,
-        )
-      : expense.expense_date.startsWith(currentMonth);
+    if (expense.installment_amount_minor !== null) {
+      const schedule = monthlySchedule(expense);
+      return isInstallmentDueInMonth(
+        schedule.startDate,
+        schedule.endDate,
+        currentMonth,
+      );
+    }
+
+    return expense.expense_date.startsWith(currentMonth);
   });
   const total = expenses.reduce(
     (sum, expense) => sum + expense.amount_minor,
     0,
   );
-  const paidTotal = paidExpenses.reduce(
-    (sum, expense) => sum + expense.amount_minor,
+  const paidTotal = expenses.reduce(
+    (sum, expense) => sum + paidAmount(expense),
     0,
   );
-  const unpaidTotal = unpaidExpenses.reduce(
-    (sum, expense) => sum + expense.amount_minor,
+  const unpaidTotal = expenses.reduce(
+    (sum, expense) => sum + remainingAmount(expense),
     0,
   );
   const currentMonthTotal = currentMonthExpenses.reduce(
@@ -108,7 +177,10 @@ export default async function ExpensesPage({
     (sum, expense) =>
       sum +
       (expense.installment_amount_minor !== null
-        ? expense.installment_amount_minor
+        ? Math.min(
+            expense.installment_amount_minor,
+            remainingAmount(expense),
+          )
         : expense.amount_minor),
     0,
   );
@@ -261,11 +333,24 @@ export default async function ExpensesPage({
               title="เพิ่มรายการ"
               description="บันทึกค่าใช้จ่าย และเพิ่มเครื่องใช้ไฟฟ้า/ประกันได้ในฟอร์มเดียว"
             >
-              <CreateExpenseForm homeId={home.id} homes={homes} rooms={rooms} />
+              <CreateExpenseForm
+                homeId={home.id}
+                homes={homes}
+                rooms={rooms}
+                projects={projects}
+              />
             </MobileCreateDialog>
           ) : null}
         </div>
       </section>
+      {params?.error ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+        >
+          {params.error}
+        </div>
+      ) : null}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-0 bg-white shadow-sm">
           <CardContent className="p-4">
@@ -274,7 +359,7 @@ export default async function ExpensesPage({
               {formatMoney(paidTotal, home?.default_currency)}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {paidExpenses.length} รายการ
+              {paidExpenses.length} รายการชำระครบ
             </p>
           </CardContent>
         </Card>
@@ -650,12 +735,24 @@ export default async function ExpensesPage({
                         <ExpenseRow
                           expense={expense}
                           rooms={rooms}
+                          projects={projects}
                           appointmentDone={isAppointmentDone(expense, now)}
                           paymentUrgent={
                             !isPaymentDone(expense) &&
                             isAppointmentDueWithinDays(expense, 3, now)
                           }
                           paymentDone={isPaymentDone(expense)}
+                          installmentPayments={paymentsFor(expense.id)}
+                          today={today}
+                          addInstallmentPaymentAction={
+                            addExpenseInstallmentPayment
+                          }
+                          updateInstallmentPaymentAction={
+                            updateExpenseInstallmentPayment
+                          }
+                          deleteInstallmentPaymentAction={
+                            deleteExpenseInstallmentPayment
+                          }
                           updateAction={updateExpense}
                           deleteAction={deleteExpense}
                         />
@@ -678,6 +775,7 @@ export default async function ExpensesPage({
                         expense={expense}
                         appliance={appliance}
                         rooms={rooms}
+                        projects={projects}
                         appointmentDone={
                           expense ? isAppointmentDone(expense, now) : false
                         }
@@ -689,6 +787,19 @@ export default async function ExpensesPage({
                         }
                         paymentDone={
                           expense ? isPaymentDone(expense) : undefined
+                        }
+                        installmentPayments={
+                          expense ? paymentsFor(expense.id) : []
+                        }
+                        today={today}
+                        addInstallmentPaymentAction={
+                          addExpenseInstallmentPayment
+                        }
+                        updateInstallmentPaymentAction={
+                          updateExpenseInstallmentPayment
+                        }
+                        deleteInstallmentPaymentAction={
+                          deleteExpenseInstallmentPayment
                         }
                         updateAction={updateApplianceExpense}
                         deleteAction={deleteApplianceExpense}
@@ -767,6 +878,7 @@ export default async function ExpensesPage({
                   homeId={home.id}
                   homes={homes}
                   rooms={rooms}
+                  projects={projects}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground">

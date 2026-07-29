@@ -1,5 +1,6 @@
 import type { HomeSummary } from "@/features/homes/queries";
 import type { Room } from "@/features/rooms/queries";
+import type { RenovationProject } from "@/features/renovations/queries";
 import { createExpense } from "@/features/expenses/actions";
 import { expenseCategoryGroups } from "@/features/expenses/categories";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,12 @@ export function CreateExpenseForm({
   homeId,
   homes,
   rooms,
+  projects,
 }: {
   homeId: string;
   homes: HomeSummary[];
   rooms: Room[];
+  projects: RenovationProject[];
 }) {
   return (
     <form action={createExpense} className="grid gap-4">
@@ -84,7 +87,7 @@ export function CreateExpenseForm({
         </div>
       </div>
       <InstallmentFields idPrefix="expense-installment" />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="expense-category">หมวดหมู่</Label>
           <select
@@ -114,6 +117,23 @@ export function CreateExpenseForm({
             {rooms.map((room) => (
               <option key={room.id} value={room.id}>
                 {room.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="expense-renovation-project">
+            โปรเจกต์รีโนเวท
+          </Label>
+          <select
+            id="expense-renovation-project"
+            name="renovation_project_id"
+            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="">ไม่เชื่อมโปรเจกต์</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
               </option>
             ))}
           </select>

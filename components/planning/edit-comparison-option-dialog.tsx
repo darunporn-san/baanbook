@@ -5,6 +5,8 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { updateComparisonOption } from "@/features/planning/actions";
 import type { ComparisonOption } from "@/features/planning/queries";
+import { InstallationFields } from "@/components/planning/installation-fields";
+import { SubmitLoadingOverlay } from "@/components/ui/loading-overlay";
 
 const fieldClass =
   "h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -111,28 +113,11 @@ export function EditComparisonOptionDialog({
               className={fieldClass}
             />
           </label>
-          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
-            รูปแบบค่าติดตั้ง
-            <select
-              name="installation_price_basis"
-              defaultValue={option.installation_price_basis}
-              className={fieldClass}
-            >
-              <option value="per_unit">แยกต่อชิ้น</option>
-              <option value="total">รวมทั้งหมด</option>
-            </select>
-          </label>
-          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
-            ค่าติดตั้ง
-            <input
-              name="installation_price"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={option.installation_price_minor / 100}
-              className={fieldClass}
-            />
-          </label>
+          <InstallationFields
+            defaultHasInstallation={option.has_installation}
+            defaultPriceBasis={option.installation_price_basis}
+            defaultPriceMinor={option.installation_price_minor}
+          />
           <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
             ลิงก์สินค้า / ใบเสนอราคา
             <input
@@ -159,8 +144,11 @@ export function EditComparisonOptionDialog({
             >
               ยกเลิก
             </Button>
-            <Button type="submit">บันทึกการแก้ไข</Button>
+            <Button type="submit" pendingText="กำลังบันทึก...">
+              บันทึกการแก้ไข
+            </Button>
           </div>
+          <SubmitLoadingOverlay label="กำลังบันทึกตัวเลือก" />
         </form>
       </dialog>
     </>

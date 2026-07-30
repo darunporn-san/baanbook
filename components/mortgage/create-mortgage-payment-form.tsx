@@ -66,8 +66,13 @@ export function CreateMortgagePaymentForm({
       : calculateMortgagePayoffDate(balanceAfterMinor, futureSchedule)
     : null;
 
+  async function submitPayment(formData: FormData) {
+    await createMortgagePayment(formData);
+    window.location.reload();
+  }
+
   return (
-    <form action={createMortgagePayment} className="grid gap-4">
+    <form action={submitPayment} className="grid gap-4">
       <input type="hidden" name="home_id" value={homeId} />
       <input type="hidden" name="mortgage_profile_id" value={profileId} />
 

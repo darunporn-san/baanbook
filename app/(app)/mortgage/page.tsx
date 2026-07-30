@@ -49,12 +49,15 @@ function MortgageScheduleMobileCard({
   row,
   today,
   currency,
+  isNext,
 }: {
   row: AdjustedMortgageScheduleRow;
   today: string;
   currency?: string;
+  isNext: boolean;
 }) {
   const dueStatus = getMortgageDueRowStatus(row.dueDate, today);
+  const isPaid = row.actualPaymentMinor != null;
   const fields = [
     {
       label: "จ่ายจริง",
@@ -71,14 +74,24 @@ function MortgageScheduleMobileCard({
       className: "text-[#b84e40]",
     },
     {
-      label: "ดอกเบี้ย",
+      label: "ดอกเบี้ยใหม่หลังโป๊ะ",
       value: formatMoney(row.adjustedInterestMinor, currency),
       className: "text-[#9a6d10]",
     },
     {
-      label: "เงินต้น",
+      label: "ดอกเบี้ยเดิม",
+      value: formatMoney(row.interestMinor, currency),
+      className: "text-muted-foreground",
+    },
+    {
+      label: "เงินต้นใหม่หลังโป๊ะ",
       value: formatMoney(row.adjustedPrincipalMinor, currency),
       className: "text-primary",
+    },
+    {
+      label: "เงินต้นเดิม",
+      value: formatMoney(row.principalMinor, currency),
+      className: "text-muted-foreground",
     },
     {
       label: "คงเหลือเดิม",
@@ -94,7 +107,11 @@ function MortgageScheduleMobileCard({
   return (
     <details
       className={`group overflow-hidden rounded-xl border ${
-        dueStatus === "urgent"
+        isPaid
+          ? "border-emerald-200 bg-emerald-50"
+          : isNext && dueStatus !== "urgent"
+            ? "border-amber-300 bg-amber-100"
+            : dueStatus === "urgent"
           ? "bg-red-100"
           : dueStatus === "current-month"
             ? "bg-amber-100"
@@ -104,7 +121,18 @@ function MortgageScheduleMobileCard({
       <summary className="grid cursor-pointer list-none grid-cols-2 gap-4 p-4 [&::-webkit-details-marker]:hidden">
         <div>
           <span className="block text-[11px] text-muted-foreground">งวด</span>
-          <span className="mt-0.5 block font-semibold">{row.installment}</span>
+          <span className="mt-0.5 flex items-center gap-2 font-semibold">
+            {row.installment}
+            {isPaid ? (
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                จ่ายแล้ว
+              </span>
+            ) : isNext ? (
+              <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                งวดถัดไป
+              </span>
+            ) : null}
+          </span>
         </div>
         <div className="text-right">
           <span className="block text-[11px] text-muted-foreground">วันที่</span>
@@ -202,15 +230,47 @@ export default async function MortgagePage({
         payments,
       })
     : [];
-  const nextScheduledPayment = adjustedMortgageSchedule[payments.length];
-  const futurePaymentSchedule = adjustedMortgageSchedule
-    .slice(payments.length + 1)
-    .map((row) => ({
-      annualInterestRate: row.annualInterestRate,
-      dueDate: row.dueDate,
-      interestDays: row.interestDays,
-      paymentMinor: row.paymentMinor,
-    }));
+  const extraPaid = adjustedMortgageSchedule.reduce(
+    (sum, row) => sum + row.extraPaymentMinor,
+    0,
+  );
+  const interestPaid = adjustedMortgageSchedule.reduce(
+    (sum, row) =>
+      sum + (row.actualPaymentMinor == null ? 0 : row.adjustedInterestMinor),
+    0,
+  );
+  const adjustedProjectedInterest = adjustedMortgageSchedule.reduce(
+    (sum, row) => sum + row.adjustedInterestMinor,
+    0,
+  );
+  const adjustedProjectedPrincipal = adjustedMortgageSchedule.reduce(
+    (sum, row) => sum + row.adjustedPrincipalMinor,
+    0,
+  );
+  const projectedPrincipal = mortgageSchedule.reduce(
+    (sum, row) => sum + row.principalMinor,
+    0,
+  );
+  const interestSaved = Math.max(
+    0,
+    projectedInterest - adjustedProjectedInterest,
+  );
+  const nextPaymentIndex = adjustedMortgageSchedule.findIndex(
+    (row) => row.actualPaymentMinor == null,
+  );
+  const nextScheduledPayment =
+    nextPaymentIndex >= 0
+      ? adjustedMortgageSchedule[nextPaymentIndex]
+      : undefined;
+  const futurePaymentSchedule =
+    nextPaymentIndex >= 0
+      ? adjustedMortgageSchedule.slice(nextPaymentIndex + 1).map((row) => ({
+          annualInterestRate: row.annualInterestRate,
+          dueDate: row.dueDate,
+          interestDays: row.interestDays,
+          paymentMinor: row.paymentMinor,
+        }))
+      : [];
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5">
@@ -241,7 +301,7 @@ export default async function MortgagePage({
       </section>
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <Card className="border-0 bg-white shadow-sm">
               <CardContent className="flex items-center gap-3 p-4">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f5f3] text-primary">
@@ -261,9 +321,14 @@ export default async function MortgagePage({
                   <Landmark className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">ชำระแล้ว</p>
+                  <p className="text-xs text-muted-foreground">
+                    ยอดชำระทั้งหมด
+                  </p>
                   <p className="mt-1 truncate text-lg font-semibold text-[#705b2f]">
                     {formatMoney(totalPaid, home?.default_currency)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {payments.length} รายการชำระ
                   </p>
                 </div>
               </CardContent>
@@ -273,10 +338,57 @@ export default async function MortgagePage({
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff0ed] text-[#b84e40]">
                   <ReceiptText className="h-5 w-5" />
                 </span>
-                <div>
-                  <p className="text-xs text-muted-foreground">การชำระ</p>
-                  <p className="mt-1 text-lg font-semibold">
-                    {payments.length} รายการ
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">
+                    เงินต้นจ่ายแล้ว
+                  </p>
+                  <p className="mt-1 truncate text-lg font-semibold text-[#b84e40]">
+                    {formatMoney(principalPaid, home?.default_currency)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-white shadow-sm">
+              <CardContent className="flex items-center gap-3 p-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff0ed] text-[#b84e40]">
+                  <ReceiptText className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">
+                    ยอดโป๊ะสะสม
+                  </p>
+                  <p className="mt-1 truncate text-lg font-semibold text-[#b84e40]">
+                    {formatMoney(extraPaid, home?.default_currency)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-white shadow-sm">
+              <CardContent className="flex items-center gap-3 p-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff5d8] text-[#8a6920]">
+                  <Landmark className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">
+                    ดอกเบี้ยจ่ายแล้ว
+                  </p>
+                  <p className="mt-1 truncate text-lg font-semibold text-[#705b2f]">
+                    {formatMoney(interestPaid, home?.default_currency)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-white shadow-sm">
+              <CardContent className="flex items-center gap-3 p-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f5f3] text-primary">
+                  <TrendingDown className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">
+                    ดอกเบี้ยลดลงจากการโป๊ะ
+                  </p>
+                  <p className="mt-1 truncate text-lg font-semibold text-primary">
+                    {formatMoney(interestSaved, home?.default_currency)}
                   </p>
                 </div>
               </CardContent>
@@ -620,39 +732,90 @@ export default async function MortgagePage({
                 </span>
               </summary>
               <CardContent className="min-w-0 p-4 sm:p-5">
+                <div className="mb-2 hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+                  <span className="h-3 w-3 rounded-sm border-l-2 border-primary/50 bg-primary/10" />
+                  คอลัมน์สีเขียวคือค่าปัจจุบันที่ใช้คำนวณหลังโป๊ะ
+                </div>
                 <div className="max-h-[560px] w-full max-w-full overflow-y-auto rounded-lg bg-secondary/20 sm:overflow-auto sm:border sm:bg-transparent">
                   <div className="space-y-3 p-2 sm:hidden">
                     {adjustedMortgageSchedule.map((row) => (
-                        <MortgageScheduleMobileCard
-                          key={row.installment}
-                          row={row}
-                          today={today}
-                          currency={home?.default_currency}
-                        />
+                      <MortgageScheduleMobileCard
+                        key={row.installment}
+                        row={row}
+                        today={today}
+                        currency={home?.default_currency}
+                        isNext={
+                          row.installment === nextScheduledPayment?.installment
+                        }
+                      />
                     ))}
                   </div>
-                  <table className="hidden w-full border-separate border-spacing-0 text-sm sm:table sm:min-w-[850px] sm:border-collapse">
+                  <table className="hidden w-full border-separate border-spacing-0 text-sm sm:table sm:min-w-[1100px] sm:border-collapse">
                     <thead className="sticky top-0 z-10 hidden bg-[#eef6f5] text-left sm:table-header-group">
                       <tr>
-                        <th className="px-3 py-3 font-semibold">งวด</th>
-                        <th className="px-3 py-3 font-semibold">วันที่</th>
-                        <th className="px-3 py-3 text-right font-semibold">
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 font-semibold"
+                        >
+                          งวด
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 font-semibold"
+                        >
+                          วันที่
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 text-right font-semibold"
+                        >
                           จ่ายจริง
                         </th>
-                        <th className="px-3 py-3 text-right font-semibold">
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 text-right font-semibold"
+                        >
                           ยอดโป๊ะ
                         </th>
-                        <th className="px-3 py-3 text-right font-semibold">
+                        <th
+                          colSpan={2}
+                          className="border-b px-3 py-2 text-center font-semibold"
+                        >
                           ดอกเบี้ย
                         </th>
-                        <th className="px-3 py-3 text-right font-semibold">
+                        <th
+                          colSpan={2}
+                          className="border-b px-3 py-2 text-center font-semibold"
+                        >
                           เงินต้น
                         </th>
-                        <th className="px-3 py-3 text-right font-semibold">
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 text-right font-semibold"
+                        >
                           คงเหลือเดิม
                         </th>
-                        <th className="px-3 py-3 text-right font-semibold">
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 text-right font-semibold"
+                        >
                           หลังโป๊ะ
+                        </th>
+                      </tr>
+                      <tr>
+                        <th className="border-l-2 border-primary/40 bg-primary/10 px-3 py-2 text-right text-xs font-semibold text-primary">
+                          <span className="block">ใหม่หลังโป๊ะ</span>
+                          <span className="text-[10px]">ใช้อยู่</span>
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+                          เดิมตามแผน
+                        </th>
+                        <th className="border-l-2 border-primary/40 bg-primary/10 px-3 py-2 text-right text-xs font-semibold text-primary">
+                          <span className="block">ใหม่หลังโป๊ะ</span>
+                          <span className="text-[10px]">ใช้อยู่</span>
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+                          เดิมตามแผน
                         </th>
                       </tr>
                     </thead>
@@ -662,11 +825,18 @@ export default async function MortgagePage({
                           row.dueDate,
                           today,
                         );
+                        const isPaid = row.actualPaymentMinor != null;
+                        const isNext =
+                          row.installment === nextScheduledPayment?.installment;
                         return (
                           <tr
                             key={row.installment}
                             className={`grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border p-4 sm:table-row sm:rounded-none sm:border-0 sm:p-0 ${
-                              dueStatus === "urgent"
+                              isPaid
+                                ? "bg-emerald-50 hover:bg-emerald-50"
+                                : isNext && dueStatus !== "urgent"
+                                  ? "bg-amber-100 hover:bg-amber-100"
+                                  : dueStatus === "urgent"
                                 ? "bg-red-100 hover:bg-red-100"
                                 : dueStatus === "current-month"
                                   ? "bg-amber-100 hover:bg-amber-100"
@@ -677,8 +847,17 @@ export default async function MortgagePage({
                               <span className="block text-[11px] text-muted-foreground sm:hidden">
                                 งวด
                               </span>
-                              <span className="mt-0.5 block font-semibold">
+                              <span className="mt-0.5 flex items-center gap-2 font-semibold">
                                 {row.installment}
+                                {isPaid ? (
+                                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                                    จ่ายแล้ว
+                                  </span>
+                                ) : isNext ? (
+                                  <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                                    งวดถัดไป
+                                  </span>
+                                ) : null}
                               </span>
                             </td>
                             <td className="min-w-0 text-right sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-left">
@@ -715,9 +894,9 @@ export default async function MortgagePage({
                                   : "—"}
                               </span>
                             </td>
-                            <td className="min-w-0 tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-right">
+                            <td className="min-w-0 tabular-nums sm:border-l-2 sm:border-primary/30 sm:bg-primary/[0.04] sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-right">
                               <span className="block text-[11px] text-muted-foreground sm:hidden">
-                                ดอกเบี้ย
+                                ดอกเบี้ยใหม่หลังโป๊ะ
                               </span>
                               <span className="mt-0.5 block font-medium text-[#9a6d10]">
                                 {formatMoney(
@@ -726,13 +905,35 @@ export default async function MortgagePage({
                                 )}
                               </span>
                             </td>
-                            <td className="min-w-0 text-right tabular-nums sm:whitespace-nowrap sm:px-3 sm:py-3">
+                            <td className="min-w-0 tabular-nums text-muted-foreground sm:whitespace-nowrap sm:px-3 sm:py-3 sm:text-right">
                               <span className="block text-[11px] text-muted-foreground sm:hidden">
-                                เงินต้น
+                                ดอกเบี้ยเดิม
+                              </span>
+                              <span className="mt-0.5 block font-medium text-muted-foreground">
+                                {formatMoney(
+                                  row.interestMinor,
+                                  home?.default_currency,
+                                )}
+                              </span>
+                            </td>
+                            <td className="min-w-0 text-right tabular-nums sm:border-l-2 sm:border-primary/30 sm:bg-primary/[0.04] sm:whitespace-nowrap sm:px-3 sm:py-3">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                เงินต้นใหม่หลังโป๊ะ
                               </span>
                               <span className="mt-0.5 block font-medium text-primary">
                                 {formatMoney(
                                   row.adjustedPrincipalMinor,
+                                  home?.default_currency,
+                                )}
+                              </span>
+                            </td>
+                            <td className="min-w-0 text-right tabular-nums text-muted-foreground sm:whitespace-nowrap sm:px-3 sm:py-3">
+                              <span className="block text-[11px] text-muted-foreground sm:hidden">
+                                เงินต้นเดิม
+                              </span>
+                              <span className="mt-0.5 block font-medium text-muted-foreground">
+                                {formatMoney(
+                                  row.principalMinor,
                                   home?.default_currency,
                                 )}
                               </span>
@@ -763,6 +964,49 @@ export default async function MortgagePage({
                         );
                       })}
                     </tbody>
+                    <tfoot className="hidden border-t-2 border-primary/20 bg-[#e8f1f0] font-semibold sm:table-footer-group">
+                      <tr>
+                        <td colSpan={2} className="px-3 py-3">
+                          รวมทั้งตาราง
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
+                          {formatMoney(totalPaid, home?.default_currency)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-[#b84e40]">
+                          {formatMoney(extraPaid, home?.default_currency)}
+                        </td>
+                        <td className="border-l-2 border-primary/30 bg-primary/[0.06] whitespace-nowrap px-3 py-3 text-right tabular-nums text-[#9a6d10]">
+                          {formatMoney(
+                            adjustedProjectedInterest,
+                            home?.default_currency,
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-muted-foreground">
+                          {formatMoney(
+                            projectedInterest,
+                            home?.default_currency,
+                          )}
+                        </td>
+                        <td className="border-l-2 border-primary/30 bg-primary/[0.06] whitespace-nowrap px-3 py-3 text-right tabular-nums text-primary">
+                          {formatMoney(
+                            adjustedProjectedPrincipal,
+                            home?.default_currency,
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-muted-foreground">
+                          {formatMoney(
+                            projectedPrincipal,
+                            home?.default_currency,
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-right text-muted-foreground">
+                          —
+                        </td>
+                        <td className="px-3 py-3 text-right text-muted-foreground">
+                          —
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
@@ -797,7 +1041,7 @@ export default async function MortgagePage({
                 ประวัติการชำระ
               </span>
               <span className="mt-1.5 block text-sm text-muted-foreground">
-                เงินต้นและดอกเบี้ยเป็นข้อมูลที่กรอกเองได้
+                เงินต้นและดอกเบี้ยเป็นค่าที่ระบบคำนวณให้อัตโนมัติ
               </span>
             </summary>
             <CardContent className="grid gap-3 p-5">
@@ -855,43 +1099,72 @@ export default async function MortgagePage({
                             name="home_id"
                             value={payment.home_id}
                           />
-                          <DateInput
-                            name="payment_date"
-                            defaultValue={payment.payment_date}
-                            required
-                          />
-                          <input
-                            name="amount"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            defaultValue={payment.amount_minor / 100}
-                            required
-                            className="h-10 rounded-md border bg-background px-3 text-sm"
-                          />
-                          <input
-                            name="principal"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            defaultValue={(payment.principal_minor ?? 0) / 100}
-                            className="h-10 rounded-md border bg-background px-3 text-sm"
-                          />
-                          <input
-                            name="interest"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            defaultValue={(payment.interest_minor ?? 0) / 100}
-                            className="h-10 rounded-md border bg-background px-3 text-sm"
-                          />
-                          <textarea
-                            name="notes"
-                            defaultValue={payment.notes ?? ""}
-                            placeholder="บันทึก"
-                            rows={3}
-                            className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm sm:col-span-2"
-                          />
+                          <label className="grid gap-1.5 text-xs font-medium">
+                            วันที่ชำระ
+                            <DateInput
+                              name="payment_date"
+                              defaultValue={payment.payment_date}
+                              required
+                            />
+                          </label>
+                          <label className="grid gap-1.5 text-xs font-medium">
+                            ยอดชำระ
+                            <input
+                              name="amount"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              defaultValue={payment.amount_minor / 100}
+                              required
+                              className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
+                            />
+                          </label>
+                          <label className="grid gap-1.5 text-xs font-medium">
+                            เงินต้น (คำนวณอัตโนมัติ)
+                            <input
+                              type="hidden"
+                              name="principal"
+                              value={(payment.principal_minor ?? 0) / 100}
+                            />
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              defaultValue={
+                                (payment.principal_minor ?? 0) / 100
+                              }
+                              disabled
+                              className="h-10 cursor-not-allowed rounded-md border bg-muted px-3 text-sm font-normal text-muted-foreground"
+                            />
+                          </label>
+                          <label className="grid gap-1.5 text-xs font-medium">
+                            ดอกเบี้ย (คำนวณอัตโนมัติ)
+                            <input
+                              type="hidden"
+                              name="interest"
+                              value={(payment.interest_minor ?? 0) / 100}
+                            />
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              defaultValue={
+                                (payment.interest_minor ?? 0) / 100
+                              }
+                              disabled
+                              className="h-10 cursor-not-allowed rounded-md border bg-muted px-3 text-sm font-normal text-muted-foreground"
+                            />
+                          </label>
+                          <label className="grid gap-1.5 text-xs font-medium sm:col-span-2">
+                            บันทึก
+                            <textarea
+                              name="notes"
+                              defaultValue={payment.notes ?? ""}
+                              placeholder="รายละเอียดเพิ่มเติม"
+                              rows={3}
+                              className="min-h-24 resize-y rounded-md border bg-background px-3 py-2 text-sm font-normal"
+                            />
+                          </label>
                           <div className="flex justify-end border-t pt-4 sm:col-span-2">
                             <Button
                               type="submit"

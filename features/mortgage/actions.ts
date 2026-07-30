@@ -140,7 +140,7 @@ export async function createMortgagePayment(formData: FormData) {
   if (!homeId || !profileId || !paymentDate) redirect("/mortgage");
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("mortgage_payments")
     .insert({
       home_id: homeId,
@@ -153,6 +153,8 @@ export async function createMortgagePayment(formData: FormData) {
     })
     .select("id")
     .single();
+
+  if (error) throw error;
 
   if (data) {
     await addTimelineEvent(supabase, {
@@ -167,7 +169,6 @@ export async function createMortgagePayment(formData: FormData) {
   revalidatePath("/mortgage");
   revalidatePath("/dashboard");
   revalidatePath("/timeline");
-  redirect(path(homeId));
 }
 
 export async function deleteMortgagePayment(formData: FormData) {
